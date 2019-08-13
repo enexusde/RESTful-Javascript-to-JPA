@@ -71,7 +71,7 @@ public class DBModelBuilder {
 				Class jt = sa.getJavaType();
 				if (sa.isOptional()) {
 					if (String.class.isAssignableFrom(jt) || char.class == jt || Character.class == jt) {
-						return ColType.OPTIONAL_STRING;
+						return ColType.OPTIONAL_STRING_OR_CHAR;
 					}
 					if (Number.class.isAssignableFrom(jt) || jt == long.class || jt == byte.class || jt == int.class
 							|| jt == short.class || jt == float.class || jt == double.class) {
@@ -92,7 +92,7 @@ public class DBModelBuilder {
 					return ColType.VERSION;
 				}
 				if (String.class.isAssignableFrom(jt) || char.class == jt || Character.class == jt) {
-					return ColType.REQUIRED_STRING;
+					return ColType.REQUIRED_STRING_OR_CHAR;
 				}
 				if (Number.class.isAssignableFrom(jt) || jt == long.class || jt == byte.class || jt == int.class
 						|| jt == short.class || jt == float.class || jt == double.class) {

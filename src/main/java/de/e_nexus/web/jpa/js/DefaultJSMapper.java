@@ -71,6 +71,9 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 	@Inject
 	private final DBModelHolder model = null;
 
+	@Inject
+	private final StringSerializer serializer = null;
+
 	public String getJavascriptCode() {
 		StringBuilder sb = new StringBuilder("var jsm= {");
 		boolean first = true;
@@ -154,10 +157,10 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 					continue;
 				case OPTIONAL_BOOLEAN:
 				case OPTIONAL_NUMBER:
-				case OPTIONAL_STRING:
+				case OPTIONAL_STRING_OR_CHAR:
 				case REQUIRED_BOOLEAN:
 				case REQUIRED_NUMBER:
-				case REQUIRED_STRING:
+				case REQUIRED_STRING_OR_CHAR:
 				case REQUIRED_MANY_TO_ONE:
 				case OPTIONAL_MANY_TO_ONE:
 					pd.getWriteMethod().invoke(entity, isnull ? null : sanitize(c, string, pd.getPropertyType(), t));
@@ -176,7 +179,7 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 	}
 
 	private Object sanitize(DBModelColumn c, String stringValue, Class<?> clazz, DBModelTable t) {
-		if (c.getColtype() == ColType.REQUIRED_STRING || c.getColtype() == ColType.OPTIONAL_STRING) {
+		if (c.getColtype() == ColType.REQUIRED_STRING_OR_CHAR || c.getColtype() == ColType.OPTIONAL_STRING_OR_CHAR) {
 			return stringValue;
 		} else if (c.getColtype() == ColType.REQUIRED_BOOLEAN || c.getColtype() == ColType.OPTIONAL_BOOLEAN) {
 			return Boolean.valueOf(stringValue);
@@ -254,14 +257,18 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		for (DBModelColumn c : table) {
 			// key
 			if (canWrite(c)) {
-				if (mustComma) {
-					sb.append(",");
+				try {
+					if (mustComma) {
+						sb.append(",");
+					}
+					mustComma = false;
+					writeKey(sb, c);
+					// value
+					writeValue(sb, bwi, c);
+					mustComma = true;
+				} catch (RuntimeException e) {
+					throw new RuntimeException("Error while write " + entityName + "." + c.getName() + " to JSON.", e);
 				}
-				mustComma = false;
-				writeKey(sb, c);
-				// value
-				writeValue(sb, bwi, c);
-				mustComma = true;
 			}
 		}
 		sb.append("},\"entity\":\"");
@@ -280,11 +287,11 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		case OPTIONAL_BOOLEAN:
 		case OPTIONAL_MANY_TO_ONE:
 		case OPTIONAL_NUMBER:
-		case OPTIONAL_STRING:
+		case OPTIONAL_STRING_OR_CHAR:
 		case REQUIRED_BOOLEAN:
 		case REQUIRED_MANY_TO_ONE:
 		case REQUIRED_NUMBER:
-		case REQUIRED_STRING:
+		case REQUIRED_STRING_OR_CHAR:
 			return true;
 		case ID:
 		case REQUIRED_BODY_DATA:
@@ -338,20 +345,16 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		case REQUIRED_NUMBER:
 			sb.append(bwi.getPropertyValue(c.getName()));
 			break;
-		case OPTIONAL_STRING:
+		case OPTIONAL_STRING_OR_CHAR:
 			Object str = bwi.getPropertyValue(c.getName());
 			if (str == null) {
 				sb.append("null");
 			} else {
-				sb.append("\"");
-				sb.append(str);
-				sb.append("\"");
+				sb.append(serializer.utf8String("" + str));
 			}
 			break;
-		case REQUIRED_STRING:
-			sb.append("\"");
-			sb.append(bwi.getPropertyValue(c.getName()));
-			sb.append("\"");
+		case REQUIRED_STRING_OR_CHAR:
+			sb.append(serializer.utf8String("" + bwi.getPropertyValue(c.getName())));
 			break;
 		case REQUIRED_BODY_DATA:
 		case OPTIONAL_BODY_DATA:
@@ -383,11 +386,11 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		case OPTIONAL_BOOLEAN:
 		case OPTIONAL_MANY_TO_ONE:
 		case OPTIONAL_NUMBER:
-		case OPTIONAL_STRING:
+		case OPTIONAL_STRING_OR_CHAR:
 		case REQUIRED_BOOLEAN:
 		case REQUIRED_MANY_TO_ONE:
 		case REQUIRED_NUMBER:
-		case REQUIRED_STRING:
+		case REQUIRED_STRING_OR_CHAR:
 			sb.append("\"");
 			sb.append(c.getName());
 			sb.append("\":");
@@ -409,19 +412,19 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 				case ID:
 				case MANY_TO_MANY:
 				case ONE_TO_MANY:
-				case OPTIONAL_MANY_TO_ONE:
 				case VERSION:
 					break;
+				case OPTIONAL_MANY_TO_ONE:
 				case REQUIRED_MANY_TO_ONE:
 					return PushRequestType.UPDATE_RELATION;
 				case OPTIONAL_BODY_DATA:
 				case OPTIONAL_BOOLEAN:
 				case OPTIONAL_NUMBER:
-				case OPTIONAL_STRING:
+				case OPTIONAL_STRING_OR_CHAR:
 				case REQUIRED_BODY_DATA:
 				case REQUIRED_BOOLEAN:
 				case REQUIRED_NUMBER:
-				case REQUIRED_STRING:
+				case REQUIRED_STRING_OR_CHAR:
 					return PushRequestType.UPDATE_FIELD;
 				}
 			}
@@ -474,13 +477,13 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		case REQUIRED_BOOLEAN:
 		case REQUIRED_BODY_DATA:
 		case REQUIRED_NUMBER:
-		case REQUIRED_STRING:
+		case REQUIRED_STRING_OR_CHAR:
 			if (newValue == null)
 				throw new RuntimeException("Must not be null: " + t + c);
 		case OPTIONAL_BODY_DATA:
 		case OPTIONAL_BOOLEAN:
 		case OPTIONAL_NUMBER:
-		case OPTIONAL_STRING:
+		case OPTIONAL_STRING_OR_CHAR:
 		}
 		// update
 		switch (c.getColtype()) {
@@ -517,12 +520,12 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		case REQUIRED_NUMBER:
 			bwi.setPropertyValue(c.getName(), parseToFieldNumberType(new String(newValue), c.getType()));
 			break;
-		case OPTIONAL_STRING:
+		case OPTIONAL_STRING_OR_CHAR:
 			if (newValue == null) {
 				bwi.setPropertyValue(c.getName(), null);
 				break;
 			}
-		case REQUIRED_STRING:
+		case REQUIRED_STRING_OR_CHAR:
 			bwi.setPropertyValue(c.getName(), new String(newValue));
 			break;
 		}
