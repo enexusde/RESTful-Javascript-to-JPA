@@ -279,7 +279,7 @@ function build(jsm, urlContextWithTailingSlash) {
 						if (x.readyState == 4) {
 							result = jp(x[rt]);
 							if (result.error != null) {
-								console.warn(json.error);
+								console.warn(result.error);
 							} else {
 								result = result.index;
 							}

@@ -236,9 +236,14 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 
 	@Transactional
 	public Object findId(Class<?> entity, DBModelColumn id, int index) {
-		return entityManager
-				.createQuery("SELECT e." + id.getName() + " FROM " + entity.getCanonicalName() + " e ORDER BY id ASC")
-				.getResultList().get(index);
+		try {
+			return entityManager
+					.createQuery(
+							"SELECT e." + id.getName() + " FROM " + entity.getCanonicalName() + " e ORDER BY id ASC")
+					.getResultList().get(index);
+		} catch (RuntimeException e) {
+			throw new RuntimeException("Can not find index no. " + index + " of " + entity.getSimpleName(), e);
+		}
 	}
 
 	@Override
@@ -583,7 +588,7 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		Object find = entityManager.find(t.getEntityClass(), pk);
 		Number index = getIndex(find);
 		if (index.intValue() == INDEX_ERROR_VALUE) {
-			return "{\"error\":\"No such pk!\"}";
+			return "{\"error\":\"No such pk for " + entity + "!\"}";
 		}
 		return "{\"index\":" + index + "}";
 	}
