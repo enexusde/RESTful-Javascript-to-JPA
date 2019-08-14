@@ -18,5 +18,4 @@ public class DefaultStringSerializer implements StringSerializer {
 			throw new RuntimeException(e);
 		}
 	}
-
 }

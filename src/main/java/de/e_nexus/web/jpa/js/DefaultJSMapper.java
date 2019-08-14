@@ -314,7 +314,6 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		sb.append("\",\"index\":");
 		sb.append(index);
 		sb.append("}");
-		System.out.println(sb);
 		return sb.toString();
 	}
 
