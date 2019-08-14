@@ -21,6 +21,7 @@ import java.io.File;
 import java.net.URL;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import de.e_nexus.web.jpa.js.mod.DeleteRequestType;
 import de.e_nexus.web.jpa.js.mod.GetRequestType;
@@ -35,5 +36,7 @@ public interface JSMapperHandler {
 	GetRequestType calculateGetRequestType(File f, HttpServletRequest req, URL url);
 
 	DeleteRequestType calculateDeleteRequestType(File f, HttpServletRequest req, URL url);
+
+	void writeBinaryDataField(File f, HttpServletResponse resp);
 
 }

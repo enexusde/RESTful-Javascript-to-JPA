@@ -41,4 +41,6 @@ public interface JSMapperController {
 	void updateRelation(File f, int newIndex, URL url);
 
 	String getIndexById(String entity, int parseInt);
+
+	void addN2M(File f, String data);
 }

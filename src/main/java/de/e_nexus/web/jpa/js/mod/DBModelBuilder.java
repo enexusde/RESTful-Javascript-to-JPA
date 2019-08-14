@@ -17,10 +17,15 @@
  */
 package de.e_nexus.web.jpa.js.mod;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.logging.Logger;
 
 import javax.persistence.EntityManager;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.Attribute.PersistentAttributeType;
 import javax.persistence.metamodel.EntityType;
@@ -50,13 +55,28 @@ public class DBModelBuilder {
 			for (Attribute<?, ?> attribute : et.getAttributes()) {
 				ColType ct = calculateType(attribute);
 				Class<?> javaType = attribute.getJavaType();
+				String oppositePropery = null;
 				if (Collection.class.isAssignableFrom(javaType)) {
 					if (attribute instanceof PluralAttribute) {
 						PluralAttribute pluralPersistentAttribute = (PluralAttribute) attribute;
+						Member member = pluralPersistentAttribute.getJavaMember();
+						if (member instanceof Method) {
+							Method method = (Method) member;
+							for (Annotation anno : method.getAnnotations()) {
+								if (anno instanceof ManyToMany) {
+									ManyToMany manyToMany = (ManyToMany) anno;
+									if (manyToMany.mappedBy() == null) {
+										throw new RuntimeException(
+												"Many-to-many annotation must have a mappedBy-value!");
+									}
+									oppositePropery = manyToMany.mappedBy();
+								}
+							}
+						}
 						javaType = pluralPersistentAttribute.getElementType().getJavaType();
 					}
 				}
-				DBModelColumn c = new DBModelColumn(attribute.getName(), ct, javaType);
+				DBModelColumn c = new DBModelColumn(attribute.getName(), ct, javaType, oppositePropery);
 				t.add(c);
 			}
 		}
@@ -121,7 +141,19 @@ public class DBModelBuilder {
 			}
 		} else if (at == PersistentAttributeType.MANY_TO_MANY) {
 			if (attribute instanceof SetAttribute<?, ?>) {
-				return ColType.MANY_TO_MANY;
+
+				SetAttribute<?, ?> setAttribute = (SetAttribute<?, ?>) attribute;
+				boolean owningSide = false;
+				if (setAttribute.getJavaMember() instanceof Method) {
+					Method method = (Method) setAttribute.getJavaMember();
+					Annotation[] annotations = method.getAnnotations();
+					for (Annotation annotation : annotations) {
+						if (annotation instanceof JoinTable) {
+							owningSide = true;
+						}
+					}
+				}
+				return owningSide ? ColType.MANY_TO_MANY_OWNER : ColType.MANY_TO_MANY_NON_OWNER;
 			}
 		}
 		return null;

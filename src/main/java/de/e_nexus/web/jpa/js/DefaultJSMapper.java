@@ -19,12 +19,15 @@ package de.e_nexus.web.jpa.js;
 
 import java.beans.PropertyDescriptor;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
@@ -72,11 +75,28 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 	private final DBModelHolder model = null;
 
 	@Inject
+	private final IndexFacade indexer = null;
+
+	@Inject
 	private final StringSerializer serializer = null;
 
 	public String getJavascriptCode() {
-		StringBuilder sb = new StringBuilder("var jsm= {");
+
+		StringBuilder sb = new StringBuilder("var tm={");
 		boolean first = true;
+		for (ColType colType : ColType.values()) {
+			if (first) {
+				first = false;
+			} else {
+				sb.append(",");
+			}
+			sb.append(colType.name());
+			sb.append(":");
+			sb.append(Integer.toString(colType.ordinal()));
+		}
+		sb.append("};");
+		sb.append("var jsm= {");
+		first = true;
 		for (DBModelTable t : model.getModel()) {
 			if (first) {
 				first = false;
@@ -95,7 +115,9 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 				sb.append(c.getName());
 				sb.append(":{t:");
 				sb.append(c.getColtype().ordinal());
-				if (c.getColtype() == ColType.ONE_TO_MANY || c.getColtype() == ColType.REQUIRED_MANY_TO_ONE) {
+				if (c.getColtype() == ColType.ONE_TO_MANY || c.getColtype() == ColType.REQUIRED_MANY_TO_ONE
+						|| c.getColtype() == ColType.MANY_TO_MANY_NON_OWNER
+						|| c.getColtype() == ColType.MANY_TO_MANY_OWNER) {
 					sb.append(",type:'");
 					sb.append(c.getType().getSimpleName());
 					sb.append("'");
@@ -104,10 +126,22 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 
 			}
 			sb.append("}");
-
 		}
 		sb.append("};\n");
-		sb.append(JS_CODE);
+		String overrideLocation = System.getProperty("de.e_nexus.web.jpa.js.nofold");
+		if (overrideLocation != null) {
+
+			try {
+				FileInputStream fis = new FileInputStream(overrideLocation);
+				sb.append(StreamUtils.copyToString(fis, JSMapperServlet.UTF8));
+				fis.close();
+			} catch (IOException e) {
+				LOG.log(Level.SEVERE, overrideLocation, e);
+				sb.append(JS_CODE);
+			}
+		} else {
+			sb.append(JS_CODE);
+		}
 		LOG.fine("Deliver javascript code to client.");
 		LOG.fine("Javascript code to send:'" + sb.toString() + "'.");
 		return sb.toString();
@@ -148,7 +182,7 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 				switch (c.getColtype()) {
 				case ID:
 				case VERSION:
-				case MANY_TO_MANY:
+				case MANY_TO_MANY_OWNER:
 				case ONE_TO_MANY:
 					continue;
 				case REQUIRED_BODY_DATA:
@@ -193,7 +227,7 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 						if (stringValue == null && c.getColtype() == ColType.OPTIONAL_MANY_TO_ONE) {
 							return null;
 						} else {
-							Object id = findId(Integer.parseInt(stringValue), table, col);
+							Object id = indexer.findId(Integer.parseInt(stringValue), table, col);
 							Object reference = entityManager.find(clazz, id);
 							if (reference == null) {
 								throw new RuntimeException(clazz.getSimpleName() + " not found! ");
@@ -231,26 +265,26 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 			}
 			return GetRequestType.COUNT;
 		}
-		return GetRequestType.DETAILS;
-	}
 
-	@Transactional
-	public Object findId(Class<?> entity, DBModelColumn id, int index) {
-		try {
-			return entityManager
-					.createQuery(
-							"SELECT e." + id.getName() + " FROM " + entity.getCanonicalName() + " e ORDER BY id ASC")
-					.getResultList().get(index);
-		} catch (RuntimeException e) {
-			throw new RuntimeException("Can not find index no. " + index + " of " + entity.getSimpleName(), e);
+		String entityForLazyLoad = f.getParentFile().getParentFile().getName();
+		DBModelTable entity = model.getEntity(entityForLazyLoad);
+		if (entity != null) {
+			for (DBModelColumn dbModelColumn : entity) {
+				String name = dbModelColumn.getName();
+				if (name.equals(f.getName())) {
+					return GetRequestType.LAZY_BINARY_DATA_FIELD;
+				}
+			}
 		}
+
+		return GetRequestType.DETAILS;
 	}
 
 	@Override
 	@Transactional
 	public String getDetails(String entityName, int index) {
 		DBModelTable table = model.getEntity(entityName);
-		Object entityId = findId(index, table);
+		Object entityId = indexer.findId(index, table);
 		Object entity = entityManager.find(table.getEntityClass(), entityId);
 		if (entity == null) {
 			throw new RuntimeException(entity + " not found by id " + entityId + ".");
@@ -287,7 +321,8 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 
 	private boolean canWrite(DBModelColumn c) {
 		switch (c.getColtype()) {
-		case MANY_TO_MANY:
+		case MANY_TO_MANY_OWNER:
+		case MANY_TO_MANY_NON_OWNER:
 		case ONE_TO_MANY:
 		case OPTIONAL_BOOLEAN:
 		case OPTIONAL_MANY_TO_ONE:
@@ -307,19 +342,10 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		}
 	}
 
-	private Object findId(int index, DBModelTable table) {
-		DBModelColumn idCol = model.getIdColumn(table);
-		return findId(index, table, idCol);
-	}
-
-	private Object findId(int index, DBModelTable table, DBModelColumn id) {
-		Object entityId = findId(table.getEntityClass(), id, index);
-		return entityId;
-	}
-
 	private void writeValue(StringBuilder sb, BeanWrapperImpl bwi, DBModelColumn c) {
 		switch (c.getColtype()) {
-		case MANY_TO_MANY:
+		case MANY_TO_MANY_OWNER:
+		case MANY_TO_MANY_NON_OWNER:
 		case ONE_TO_MANY:
 		case OPTIONAL_MANY_TO_ONE:
 		case REQUIRED_MANY_TO_ONE:
@@ -377,8 +403,7 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 				BeanWrapperImpl bwi = new BeanWrapperImpl(val);
 				Object o = bwi.getPropertyValue(c.getName());
 
-				return entityManager.createQuery("SELECT e." + c.getName() + " FROM " + t.getName() + " e WHERE e."
-						+ c.getName() + " < " + o + " ORDER BY " + c.getName() + " DESC").getResultList().size();
+				return indexer.getIndexById(o, c, t);
 			}
 		}
 		return INDEX_ERROR_VALUE;
@@ -386,7 +411,8 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 
 	private void writeKey(StringBuilder sb, DBModelColumn c) {
 		switch (c.getColtype()) {
-		case MANY_TO_MANY:
+		case MANY_TO_MANY_OWNER:
+		case MANY_TO_MANY_NON_OWNER:
 		case ONE_TO_MANY:
 		case OPTIONAL_BOOLEAN:
 		case OPTIONAL_MANY_TO_ONE:
@@ -399,9 +425,9 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 			sb.append("\"");
 			sb.append(c.getName());
 			sb.append("\":");
-		case ID:
 		case REQUIRED_BODY_DATA:
 		case OPTIONAL_BODY_DATA:
+		case ID:
 		case VERSION:
 		}
 	}
@@ -414,8 +440,10 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		for (DBModelColumn c : table) {
 			if (c.getName().equals(property)) {
 				switch (c.getColtype()) {
+				case MANY_TO_MANY_OWNER:
+				case MANY_TO_MANY_NON_OWNER:
+					return PushRequestType.ADD_N2M;
 				case ID:
-				case MANY_TO_MANY:
 				case ONE_TO_MANY:
 				case VERSION:
 					break;
@@ -451,12 +479,13 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 				return;
 			}
 		}
+		throw new IllegalArgumentException("No such field: " + f.getName());
 	}
 
 	@Transactional
 	private void updateSimpleFieldValue(DBModelTable t, DBModelColumn c, HttpServletRequest req, String index) {
 
-		Object entityId = findId(Integer.parseInt(index), t);
+		Object entityId = indexer.findId(Integer.parseInt(index), t);
 		Object entity = entityManager.find(t.getEntityClass(), entityId);
 		BeanWrapperImpl bwi = new BeanWrapperImpl(entity);
 
@@ -473,7 +502,7 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		// check
 		switch (c.getColtype()) {
 		case ID:
-		case MANY_TO_MANY:
+		case MANY_TO_MANY_OWNER:
 		case ONE_TO_MANY:
 		case VERSION:
 		case OPTIONAL_MANY_TO_ONE:
@@ -493,7 +522,7 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		// update
 		switch (c.getColtype()) {
 		case ID:
-		case MANY_TO_MANY:
+		case MANY_TO_MANY_OWNER:
 		case ONE_TO_MANY:
 		case VERSION:
 		case OPTIONAL_MANY_TO_ONE:
@@ -554,7 +583,7 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		DBModelTable entityTable = model.getEntity(entityName);
 		DBModelColumn idCol = model.getIdColumn(entityTable);
 
-		Object id = findId(Integer.parseInt(f.getName()), entityTable, idCol);
+		Object id = indexer.findId(Integer.parseInt(f.getName()), entityTable, idCol);
 		Object entity = entityManager.find(entityTable.getEntityClass(), id);
 		entityManager.remove(entity);
 	}
@@ -566,11 +595,11 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		int entityIndex = Integer.parseInt(f.getParentFile().getName());
 		String entityName = f.getParentFile().getParentFile().getName();
 		DBModelTable table = model.getEntity(entityName);
-		Object entity = entityManager.find(table.getEntityClass(), findId(entityIndex, table));
+		Object entity = entityManager.find(table.getEntityClass(), indexer.findId(entityIndex, table));
 		for (DBModelColumn c : table) {
 			if (c.getName().equals(propertyName)) {
 				BeanWrapperImpl bwi = new BeanWrapperImpl(entity);
-				Object newId = findId(newIndex, model.getEntity(c.getType().getSimpleName()));
+				Object newId = indexer.findId(newIndex, model.getEntity(c.getType().getSimpleName()));
 				Object newValue = entityManager.find(c.getType(), newId);
 				bwi.setPropertyValue(propertyName, newValue);
 				entityManager.persist(entity);
@@ -591,5 +620,89 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 			return "{\"error\":\"No such pk for " + entity + "!\"}";
 		}
 		return "{\"index\":" + index + "}";
+	}
+
+	@Override
+	@Transactional
+	public void writeBinaryDataField(File f, HttpServletResponse resp) {
+		String entityForLazyLoad = f.getParentFile().getParentFile().getName();
+		DBModelColumn field = null;
+		DBModelTable table = model.getEntity(entityForLazyLoad);
+		if (table != null) {
+			for (DBModelColumn col : table) {
+				String name = col.getName();
+				if (name.equals(f.getName())) {
+					field = col;
+					break;
+				}
+			}
+		}
+		int entityIndex = Integer.parseInt(f.getParentFile().getName());
+		Object findId = indexer.findId(entityIndex, table);
+		Object entity = entityManager.find(table.getEntityClass(), findId);
+		BeanWrapperImpl bwi = new BeanWrapperImpl(entity);
+		Object propertyValue = bwi.getPropertyValue(field.getName());
+
+		try {
+			ServletOutputStream os = resp.getOutputStream();
+			if (propertyValue instanceof byte[]) {
+				byte[] bs = (byte[]) propertyValue;
+				boolean first = true;
+				os.write('[');
+				for (byte b : bs) {
+					if (first) {
+						first = false;
+					} else {
+						os.write(',');
+
+					}
+					os.write(Byte.toString(b).getBytes(JSMapperServlet.UTF8));
+				}
+				os.write(']');
+			}
+		} catch (IOException e) {
+			throw new RuntimeException("Can not write value to response!", e);
+		}
+	}
+
+	@Override
+	@Transactional
+	public void addN2M(File f, String data) {
+		String property = f.getName();
+		int ownerTableIndex = Integer.parseInt(f.getParentFile().getName());
+		String ownerTable = f.getParentFile().getParentFile().getName();
+		DBModelTable ownerMapping = model.getEntity(ownerTable);
+		DBModelColumn ownerColumn = null;
+		Object ownerId = indexer.findId(ownerTableIndex, ownerMapping);
+		Object ownerEntity = entityManager.find(ownerMapping.getEntityClass(), ownerId);
+		for (DBModelColumn dbModelColumn : ownerMapping) {
+			if (dbModelColumn.getName().equals(property)) {
+				ownerColumn = dbModelColumn;
+			}
+		}
+		DBModelTable nonOwnerMapping = model.getEntity(ownerColumn.getType().getSimpleName());
+		int nonOwnerIndex = Integer.parseInt(data);
+		Object nonOwnerId = indexer.findId(nonOwnerIndex, nonOwnerMapping);
+		Object nonOwnerEntity = entityManager.find(nonOwnerMapping.getEntityClass(), nonOwnerId);
+		if (ownerColumn.getColtype() == ColType.MANY_TO_MANY_NON_OWNER) {
+			for (DBModelColumn dbModelColumn : nonOwnerMapping) {
+				if (dbModelColumn.getName().equals(ownerColumn.getN2mOppositeProperty())) {
+					addN2M(dbModelColumn, nonOwnerEntity, ownerEntity);
+					return;
+				}
+			}
+		} else {
+			addN2M(ownerColumn, ownerEntity, nonOwnerEntity);
+		}
+	}
+
+	private void addN2M(DBModelColumn ownerColumn, Object ownerEntity, Object nonOwnerEntity) {
+		BeanWrapperImpl bwi = new BeanWrapperImpl(ownerEntity);
+		Object collection = bwi.getPropertyValue(ownerColumn.getName());
+		if (collection instanceof Set) {
+			Set set = (Set) collection;
+			set.add(nonOwnerEntity);
+			entityManager.persist(ownerEntity);
+		}
 	}
 }

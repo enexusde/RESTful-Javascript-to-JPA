@@ -18,5 +18,5 @@
 package de.e_nexus.web.jpa.js.mod;
 
 public enum GetRequestType {
-	JAVASCRIPT, COUNT, DETAILS, INDEX_OF_ID
+	JAVASCRIPT, COUNT, DETAILS, INDEX_OF_ID, LAZY_BINARY_DATA_FIELD
 }

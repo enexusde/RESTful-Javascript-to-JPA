@@ -23,12 +23,15 @@ public class DBModelColumn {
 
 	private ColType coltype;
 
-	private Class type;
+	private Class<?> type;
 
-	public DBModelColumn(String name, ColType colType, Class type) {
+	private String n2mOppositeProperty;
+
+	public DBModelColumn(String name, ColType colType, Class<?> type, String n2mOppositeProperty) {
 		this.name = name;
 		this.coltype = colType;
 		this.type = type;
+		this.n2mOppositeProperty = n2mOppositeProperty;
 	}
 
 	public String getName() {
@@ -51,5 +54,9 @@ public class DBModelColumn {
 	@Override
 	public String toString() {
 		return name + "(" + coltype + ")";
+	}
+
+	public String getN2mOppositeProperty() {
+		return n2mOppositeProperty;
 	}
 }

@@ -18,5 +18,5 @@
 package de.e_nexus.web.jpa.js.mod;
 
 public enum PushRequestType {
-	UPDATE_FIELD, UPDATE_RELATION
+	UPDATE_FIELD, UPDATE_RELATION, ADD_N2M
 }

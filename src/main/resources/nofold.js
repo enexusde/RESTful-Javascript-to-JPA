@@ -1,20 +1,6 @@
 function build(jsm, urlContextWithTailingSlash) {
 	"use strict";
 	var ctx = urlContextWithTailingSlash;
-	var OPTN = 0;
-	var OPTB = 1;
-	var OPTS = 2;
-	var OPTBD = 3;
-
-	var REQN = 6;
-	var REQB = 7;
-	var REQS = 8;
-	var REQBD = 9;
-
-	var O2M = 10;
-	var OPTM2O = 11;
-	var REQM2O = 12;
-
 	var r = XMLHttpRequest;
 	var p = Object.defineProperty;
 	var euc = encodeURIComponent;
@@ -85,14 +71,31 @@ function build(jsm, urlContextWithTailingSlash) {
 				get : function(e) {
 					var val = m.cache[entity][index].payload[property];
 					var p = jsm[entity][property];
-					if (p.t == O2M) {
+					if (p.t == tm.ONE_TO_MANY) {
 						var o = [];
 						for (var i = 0; i < val.length; i++) {
 							o.push(m[p.type][val[i]]);
 						}
 						return o;
 					}
-					if (p.t == REQM2O) {
+					if (p.t == tm.MANY_TO_MANY_OWNER || p.t == tm.MANY_TO_MANY_NON_OWNER) {
+						var o = [];
+						for (var i = 0; i < val.length; i++) {
+							o.push(m[p.type][val[i]]);
+						}
+						o.push = function(e,cb){
+							var x = new r();
+							x.onreadystatechange = function() {
+								if (x.readyState == 4) {
+									if (cb!=null) cb(x);
+								}
+							}
+							x.open('POST', ctx + entity + '/' + index + '/' + property + '/', cb!=null);
+							x.send(e);
+						}
+						return o;
+					}
+					if (p.t == tm.REQUIRED_MANY_TO_ONE) {
 						return m[p.type][val]
 					}
 					return val;
@@ -101,14 +104,14 @@ function build(jsm, urlContextWithTailingSlash) {
 					var type = jsm[entity];
 					var prop = type[property];
 					var msg = '';
-					msg += tcheck(e, prop.t == REQS, 'string', false, property);
-					msg += tcheck(e, prop.t == REQB, 'boolean', false, property);
-					msg += tcheck(e, prop.t == REQN, 'number', false, property);
-					msg += tcheck(e, prop.t == REQBD, 'object', false, property);
-					msg += tcheck(e, prop.t == OPTS, 'string', true, property);
-					msg += tcheck(e, prop.t == OPTB, 'boolean', true, property);
-					msg += tcheck(e, prop.t == OPTN, 'number', true, property);
-					msg += tcheck(e, prop.t == OPTBD, 'object', true, property);
+					msg += tcheck(e, prop.t == tm.REQUIRED_STRING_OR_CHAR, 'string', false, property);
+					msg += tcheck(e, prop.t == tm.REQUIRED_BOOLEAN, 'boolean', false, property);
+					msg += tcheck(e, prop.t == tm.REQUIRED_NUMBER, 'number', false, property);
+					msg += tcheck(e, prop.t == tm.REQUIRED_BODY_DATA, 'object', false, property);
+					msg += tcheck(e, prop.t == tm.OPTIONAL_STRING_OR_CHAR, 'string', true, property);
+					msg += tcheck(e, prop.t == tm.OPTIONAL_BOOLEAN, 'boolean', true, property);
+					msg += tcheck(e, prop.t == tm.OPTIONAL_NUMBER, 'number', true, property);
+					msg += tcheck(e, prop.t == tm.OPTIONAL_BODY_DATA, 'object', true, property);
 					if (msg != '')
 						throw msg;
 					var x = new r();
@@ -133,6 +136,36 @@ function build(jsm, urlContextWithTailingSlash) {
 		for (var i = 0; i < names.length; i++) {
 			constructProperty(entity, index, names[i]);
 		}
+		// construct virtual properties
+		var mod = jsm[entity];
+		names = Object.keys(mod);
+		for (var i = 0; i < names.length; i++) {
+			var name = names[i];
+			var virt = mod[name].t == tm.OPTIONAL_BODY_DATA || mod[name].t == tm.REQUIRED_BODY_DATA;
+			if (virt) {
+				function constructLazyVirtual(o, name, index) {
+					p(o, name, {
+						enumerable : true,
+						configurable : true,
+						get : function(e) {
+							var x = new r();
+							x.open("GET", urlContextWithTailingSlash + entity + '/' + index + '/' + name, false);
+							x.send();
+							var json = jp(x[rt]);
+							return json;
+						},
+						set : function(e) {
+							var x = new r();
+							x.open("POST", urlContextWithTailingSlash + entity + '/' + index + '/' + name, false);
+							x.send(new Int8Array(e));
+							return e;
+						}
+					});
+				}
+				constructLazyVirtual(o, name, index);
+			}
+		}
+
 		o.remove = function(cb) {
 			var x = new r();
 			x.onreadystatechange = function() {
@@ -176,10 +209,12 @@ function build(jsm, urlContextWithTailingSlash) {
 			for (var m = 0; m < fields.length; m++) {
 				var c = t[fields[m]];
 				var cn = fields[m];
-				if (c.t == OPTN || c.t == OPTB || c.t == OPTS || c.t == OPTBD || c.t == OPTM2O) {
+				if (c.t == tm.OPTIONAL_NUMBER || c.t == tm.OPTIONAL_BOOLEAN || c.t == tm.OPTIONAL_STRING_OR_CHAR || c.t == tm.OPTIONAL_BODY_DATA
+						|| c.t == tm.OPTIONAL_MANY_TO_ONE) {
 					optional.push(cn);
 				}
-				if (c.t == REQN || c.t == REQB || c.t == REQS || c.t == REQBD || c.t == REQM2O) {
+				if (c.t == tm.REQUIRED_NUMBER || c.t == tm.REQUIRED_BOOLEAN || c.t == tm.REQUIRED_STRING_OR_CHAR || c.t == tm.REQUIRED_BODY_DATA
+						|| c.t == tm.REQUIRED_MANY_TO_ONE) {
 					required.push(cn);
 				}
 			}
@@ -190,15 +225,15 @@ function build(jsm, urlContextWithTailingSlash) {
 					msg += '\n  ' + ky + ' is unknown! ';
 					continue;
 				}
-				msg += tcheck(data[ky], t[ky].t == REQB, 'boolean', false, ky);
-				msg += tcheck(data[ky], t[ky].t == OPTB, 'boolean', true, ky);
-				msg += tcheck(data[ky], t[ky].t == REQN, 'number', false, ky);
-				msg += tcheck(data[ky], t[ky].t == OPTN, 'number', true, ky);
-				msg += tcheck(data[ky], t[ky].t == REQS, 'string', false, ky);
-				msg += tcheck(data[ky], t[ky].t == OPTS, 'string', true, ky);
-				msg += tcheck(data[ky], t[ky].t == REQBD, 'object', false, ky);
-				msg += tcheck(data[ky], t[ky].t == OPTBD, 'object', true, ky);
-				msg += tcheck(data[ky], t[ky].t == OPTM2O, 'number', true, ky);
+				msg += tcheck(data[ky], t[ky].t == tm.REQUIRED_BOOLEAN, 'boolean', false, ky);
+				msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_BOOLEAN, 'boolean', true, ky);
+				msg += tcheck(data[ky], t[ky].t == tm.REQUIRED_NUMBER, 'number', false, ky);
+				msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_NUMBER, 'number', true, ky);
+				msg += tcheck(data[ky], t[ky].t == tm.REQUIRED_STRING_OR_CHAR, 'string', false, ky);
+				msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_STRING_OR_CHAR, 'string', true, ky);
+				msg += tcheck(data[ky], t[ky].t == tm.REQUIRED_BODY_DATA, 'object', false, ky);
+				msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_BODY_DATA, 'object', true, ky);
+				msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_MANY_TO_ONE, 'number', true, ky);
 			}
 			for (var k = 0; k < required.length; k++) {
 				var ky = required[k];
@@ -252,7 +287,7 @@ function build(jsm, urlContextWithTailingSlash) {
 					var hasBody = false;
 					for (var i = 0; i < fields.length; i++) {
 						var f = t[fields[i]];
-						if (f.t == REQBD || f.t == OPTBD) {
+						if (f.t == tm.REQUIRED_BODY_DATA || f.t == tm.OPTIONAL_BODY_DATA) {
 							hasBody = true;
 							var d = data[fields[i]];
 							body = new Int8Array(d);

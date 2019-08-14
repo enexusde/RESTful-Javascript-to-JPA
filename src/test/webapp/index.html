@@ -6,61 +6,311 @@
 <meta http-equiv="expires" content="Tue, 01 Jan 1980 1:00:00 GMT" />
 <meta http-equiv="pragma" content="no-cache" />
 <script src="jms/jsm.js"></script>
-<script src="nofold.js"></script>
 </head>
 <body>
+	<style>
+textarea {
+	height: 100%;
+	width: 100%;
+	background: #eee;
+}
+
+button {
+	padding: 20px;
+}
+</style>
+	<table width="100%" height="100%">
+		<tr>
+			<td>
+				<button onclick="test('st',singleTableTest)">Test single
+					table</button> <br> <textarea id="st"></textarea>
+			</td>
+			<td>
+				<button onclick="test('o2n',o2nTableTest)">1-n Relation</button> <br>
+				<textarea id="o2n"></textarea>
+			</td>
+			<td>
+				<button onclick="test('n2m',n2mTableTest)">n-m Relation</button> <br>
+				<textarea id="n2m"></textarea>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="3" height="120px">
+				<button onclick="reset()">Reset database</button>
+			</td>
+		</tr>
+	</table>
 	<script>
 		var b = build(jsm, 'jms/');
-		// cleanup
-		while (b.Child.length > 0) {
-			b.Child[0].remove();
-		}
-		while (b.Mother.length > 0) {
-			b.Mother[0].remove();
-		}
-		if (b.Mother.length !== 0)
-			throw 'Must have no mothers';
-		var mother = b.Mother.push({
-			name : 'Marry'
-		});
-		if (b.Mother.length !== 1)
-			throw 'Must have one mother';
-		if (b.Mother[0].name !== 'Marry')
-			throw 'Mothers name must be marry.';
-		b.Child.push({
-			name : 'Tom',
-			mother : mother
-		});
-		if (b.Child[0].mother.name !== 'Marry') {
-			throw 'Mothers name must be Marry.';
-		}
+		function reset() {
+			// cleanup
+			while (b.Child.length > 0) {
+				b.Child[0].remove();
+			}
+			while (b.Mother.length > 0) {
+				b.Mother[0].remove();
+			}
+			while (b.Info.length > 0) {
+				b.Info[0].remove();
+			}
+			while (b.User.length > 0) {
+				b.User[0].remove();
+			}
+			while (b.Group.length > 0) {
+				b.Group[0].remove();
+			}
 
-		if (b.Mother[0].childs.length != 1)
-			throw 'Must have one child but has ' + b.Mother[0].childs.length;
-		if (b.Mother[0].childs[0].name !== 'Tom')
-			throw 'Name of child must be Tom';
+		}
+		reset();
+		function test(id, suit) {
+			var textArea = document.getElementById(id);
+			textArea.value = "";
+			function log(txt) {
+				textArea.value = textArea.value + txt + "\n";
+				textArea.scrollTop = textArea.scrollHeight
 
-		var jenny = b.Mother.push({
-			name : 'Jenny'
-		});
-
-		console.log(b.Child.load(0));
-		
-		b.Child[0].mother = jenny;
-		if (b.Child[0].mother.name != 'Jenny') {
-			throw 'Mother must be jenny!';
+			}
+			try {
+				log('Clear all items');
+				reset();
+				suit(log);
+			} catch (e) {
+				log('----> ' + e);
+			}
 		}
 
-		var ok = true;
-		try {
-			b.Mother[1].remove();
-			ok = false;
-		} catch (e) {
-		}
-		if (!ok)
-			throw 'Must fail to remove mother because child exists.';
+		function singleTableTest(log) {
+			log('Try to insert one row having only required fields.');
+			var descReq = 'Helloooo.';
+			var pushed = {
+				countRequired : 99,
+				iconRequired : [ 1, 2, 3 ],
+				descRequired : descReq,
+				readyRequired : false,
+				desc : null,
+				count : null,
+				ready : null
+			};
+			var index = b.Info.push(pushed);
+			log('Inserted having index: ' + index);
+			log('Load item with index...');
+			var info = b.Info[index];
+			log('Loaded, get required-description-text: ' + info.descRequired);
+			if (descReq !== info.descRequired) {
+				throw 'Expected ' + descReq + " but was " + info.descRequried;
+			} else {
+				log('Required-desciption matched good!')
+			}
 
-		console.info("All fine!");
+			log('Loaded, get required-read-flag: ' + info.readyRequired);
+			if (info.readyRequired) {
+				throw 'Expected ' + true + " but was " + info.readyRequired;
+			} else {
+				log('Required-ready-flag matched good!')
+			}
+
+			log('Loaded, get required-count: ' + info.countRequired);
+			if (info.countRequired !== 99) {
+				throw 'Expected ' + 99 + " but was " + info.countRequired;
+			} else {
+				log('Required-ready-flag matched good!');
+			}
+			log('Loaded, get required-icon: ' + info.iconRequired);
+			if (info.iconRequired.length !== 3) {
+				throw 'Expected length of ' + 3 + " but was " + info.iconRequired.length;
+			} else {
+				log('Required-icon matched good!');
+			}
+			log('Check optional desc');
+			if (info.desc == null) {
+				log('optional desc returned null as expected.');
+			} else {
+				throw 'Expected null but got ' + info.desc;
+			}
+			log('Check optional flag');
+			if (info.ready == null) {
+				log('optional ready returned null as expected.');
+			} else {
+				throw 'Expected null but got ' + info.ready;
+			}
+			log('Check optional count');
+			if (info.count == null) {
+				log('optional count returned null as expected.');
+			} else {
+				throw 'Expected null but got ' + info.count;
+			}
+			log('  modify all values!');
+			info.count = 5;
+			info.count++; // to 6
+			info.count += 2; // to 8
+			info.count--; // to 7
+			info.desc = "opt desc";
+			info.ready = true;
+			info.descRequired = ' thanks ';
+			info.readyRequired != info.readyRequired;
+			info.iconRequired = [ 0 ];
+			info.countRequired = -1;
+
+			log('values modified, check results...');
+
+			log('get required-description-text: ' + info.descRequired);
+			if (info.descRequired !== ' thanks ') {
+				throw 'Expected  thanks  but was ' + info.descRequried;
+			} else {
+				log('Required-desciption matched good!')
+			}
+
+			log('Loaded, get required-read-flag: ' + info.readyRequired);
+			if (info.readyRequired == false) {
+				log('Required-ready-flag matched good!')
+			} else {
+				throw 'Expected ' + false + " but was " + info.readyRequired;
+			}
+
+			log('Loaded, get required-count: ' + info.countRequired);
+			if (info.countRequired !== -1) {
+				throw 'Expected ' + -1 + " but was " + info.countRequired;
+			} else {
+				log('Required-ready-flag matched good!');
+			}
+
+			log('Loaded, get required-icon: ' + info.iconRequired);
+			if (info.iconRequired.length !== 1) {
+				throw 'Expected length of ' + 1 + " but was " + info.iconRequired.length;
+			} else {
+				log('Required-icon matched good!');
+			}
+			log('Check optional desc');
+			if (info.desc == 'opt desc') {
+				log('optional desc returned "opt desc" as expected.');
+			} else {
+				throw 'Expected null but got ' + info.desc;
+			}
+			log('Check optional flag');
+			if (info.ready == true) {
+				log('optional ready returned true as expected.');
+			} else {
+				throw 'Expected null but got ' + info.ready;
+			}
+			log('Check optional count');
+			if (info.count == 7) {
+				log('optional count returned 7 as expected.');
+			} else {
+				throw 'Expected null but got ' + info.count;
+			}
+			log('All checks passed! Starting desync test:');
+			reset();
+			log('Create second interface');
+			var c = build(jsm, 'jms/');
+			log('Second interface created');
+			if (c.Info.length > 0) {
+				throw 'Size must be initial 0';
+			}
+			log('Insert info in first interface');
+			b.Info.push(pushed);
+			log('Check info in second interface');
+			if (c.Info.length !== 1) {
+				throw 'Second interface did not know about the inserted value';
+			}
+			log('Second interface noticed the change from the fist interface successfully.')
+			log('Start to remove element in second interface.')
+			c.Info[0].remove();
+			log('Check length in first interface.');
+			if (b.Info.length !== 0) {
+				throw 'Wrong size reported from first interface!'
+			}
+			log('Check length in first interface successfully.');
+		}
+
+		function o2nTableTest(log) {
+			log('Test empty database.');
+			if (b.Mother.length !== 0)
+				throw 'Must have no mothers';
+			log('Test empty database successfully.');
+			log('Test insert mother Marry.');
+			var mother = b.Mother.push({
+				name : 'Marry'
+			});
+			log('Check count of mothers.');
+			if (b.Mother.length !== 1)
+				throw 'Must have one mother';
+			log('Check count of mothers successfully.');
+			log('Check name of mother[0].');
+			if (b.Mother[0].name !== 'Marry')
+				throw 'Mothers name must be marry.';
+			log('Check name of mother[0] successfully.');
+			log('Create son Tom as child of mother[0].');
+			b.Child.push({
+				name : 'Tom',
+				mother : mother
+			});
+			log('Check mother of child[0].');
+			if (b.Child[0].mother.name !== 'Marry') {
+				throw 'Mothers name must be Marry.';
+			}
+			log('Check mother of child[0] successfully showed Marry.');
+			if (b.Mother[0].childs.length != 1)
+				throw 'Must have one child but has ' + b.Mother[0].childs.length;
+			log('Successfully reported Marry as mother of Tom.');
+			if (b.Mother[0].childs[0].name !== 'Tom')
+				throw 'Name of child must be Tom';
+
+			log('Create new mother Jenny.');
+			var jenny = b.Mother.push({
+				name : 'Jenny'
+			});
+			log('Make child Tom have new mother Jenny.');
+			b.Child[0].mother = jenny;
+			log('Check Tom mother name Jenny.');
+			if (b.Child[0].mother.name != 'Jenny') {
+				throw 'Mother must be jenny!';
+			}
+			log('Jenny successfully reported mother of son Tom.');
+
+			var ok;
+			try {
+				log('Try to remove mother Jenny.');
+				b.Mother[1].remove();
+				ok = false;
+			} catch (e) {
+				ok = true;
+				log('Successfully reported that Jenny can not be removed as long as Tom is her son.');
+			}
+			if (!ok)
+				throw 'Must fail to remove mother because child exists.';
+			log("All fine!");
+		}
+		function n2mTableTest(log) {
+			log('Insert user root');
+			var root = b.User.push({
+				name : 'root'
+			});
+			log('Check groups of root is 0');
+			if (b.User[0].groups.length !== 0)
+				throw 'roots group count must be 0';
+			log('Group count checked successfully for length of 0.');
+			log('Insert group');
+			b.Group.push({
+				name : 'Admin'
+			});
+			log('Check users of group admin is 0');
+			if (b.Group[0].users.length !== 0)
+				throw 'Admins member count must be 0';
+			log('Checked member count of Admin successfully for length of 0.');
+
+			log('Join user root into group admin');
+			b.Group[0].users.push(root);
+			log('Check that group admin has one member');
+			if (b.Group[0].users.length !== 1) {
+				throw 'Group expected to have one member!';
+			}
+			log('Successfully noticed admin has one owner.');
+			log('Check name of owner...');
+			if(b.Group[0].users[0].name!=='root'){
+				throw 'Member of admin is not root!';
+			}
+			log('Successfully noticed root in admin.');
+		}
 	</script>
 </body>
 

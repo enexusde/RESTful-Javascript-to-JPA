@@ -41,6 +41,7 @@ import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.context.WebApplicationContext;
 
+import de.e_nexus.web.jpa.js.mod.DBModelColumn;
 import de.e_nexus.web.jpa.js.mod.DBModelHolder;
 import de.e_nexus.web.jpa.js.mod.DBModelTable;
 import de.e_nexus.web.jpa.js.mod.GetRequestType;
@@ -154,6 +155,9 @@ public class JSMapperServlet extends HttpServlet {
 		case UPDATE_RELATION:
 			int newIndex = Integer.parseInt(StreamUtils.copyToString(req.getInputStream(), UTF8));
 			getController().updateRelation(f, newIndex, url);
+		case ADD_N2M:
+			String data = StreamUtils.copyToString(req.getInputStream(), UTF8);
+			getController().addN2M(f, data);
 		default:
 			break;
 		}
@@ -201,6 +205,9 @@ public class JSMapperServlet extends HttpServlet {
 			resp.setContentType(JAVASCRIPT);
 			resp.getOutputStream().write(javascriptCode.getBytes());
 			break;
+		case LAZY_BINARY_DATA_FIELD:
+			resp.setContentType(JSON);
+			bean.writeBinaryDataField(f, resp);
 		default:
 			break;
 		}

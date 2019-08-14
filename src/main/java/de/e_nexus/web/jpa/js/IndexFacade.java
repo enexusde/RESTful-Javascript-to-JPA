@@ -1,0 +1,50 @@
+package de.e_nexus.web.jpa.js;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
+
+import org.springframework.transaction.annotation.Transactional;
+
+import de.e_nexus.web.jpa.js.mod.DBModelColumn;
+import de.e_nexus.web.jpa.js.mod.DBModelHolder;
+import de.e_nexus.web.jpa.js.mod.DBModelTable;
+
+@Named
+@Transactional
+public class IndexFacade {
+
+	@PersistenceContext
+	private final EntityManager entityManager = null;
+
+	@Inject
+	private final DBModelHolder model = null;
+
+	public Number getIndexById(Object o, DBModelColumn c, DBModelTable t) {
+		Query query = entityManager.createQuery("SELECT e." + c.getName() + " FROM " + t.getName() + " e WHERE e."
+				+ c.getName() + " < " + o + " ORDER BY " + c.getName() + " DESC");
+		return query.getResultList().size();
+	}
+
+	public Object findId(int index, DBModelTable table) {
+		DBModelColumn idCol = model.getIdColumn(table);
+		return findId(index, table, idCol);
+	}
+
+	public Object findId(int index, DBModelTable table, DBModelColumn id) {
+		Object entityId = findId(table.getEntityClass(), id, index);
+		return entityId;
+	}
+
+	public Object findId(Class<?> entity, DBModelColumn idColumn, int index) {
+		try {
+			Query query = entityManager.createQuery(
+					"SELECT e." + idColumn.getName() + " FROM " + entity.getCanonicalName() + " e ORDER BY id ASC");
+			return query.getResultList().get(index);
+		} catch (RuntimeException e) {
+			throw new RuntimeException("Can not find index no. " + index + " of " + entity.getSimpleName(), e);
+		}
+	}
+}
