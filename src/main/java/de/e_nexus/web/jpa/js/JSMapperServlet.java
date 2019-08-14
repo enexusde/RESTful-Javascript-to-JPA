@@ -41,7 +41,6 @@ import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.context.WebApplicationContext;
 
-import de.e_nexus.web.jpa.js.mod.DBModelColumn;
 import de.e_nexus.web.jpa.js.mod.DBModelHolder;
 import de.e_nexus.web.jpa.js.mod.DBModelTable;
 import de.e_nexus.web.jpa.js.mod.GetRequestType;
