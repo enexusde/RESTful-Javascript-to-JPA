@@ -22,9 +22,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.ParameterizedType;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -39,7 +41,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.springframework.aop.framework.Advised;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
@@ -232,22 +233,29 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		}
 	}
 
-	private Object sanitize(DBModelColumn c, String stringValue, Class<?> clazz, DBModelTable t) {
+	private Object sanitize(DBModelColumn c, String decodedStringValue, Class<?> clazz, DBModelTable t) {
 		if (c.getColtype() == ColType.REQUIRED_STRING_OR_CHAR || c.getColtype() == ColType.OPTIONAL_STRING_OR_CHAR) {
-			return stringValue;
+			if (decodedStringValue == null) {
+				return null;
+			}
+			try {
+				return URLDecoder.decode(decodedStringValue.replace("+", "%2B"), "UTF-8").replace("%2B", "+");
+			} catch (UnsupportedEncodingException e1) {
+				throw new RuntimeException("UTF8 not supported!", e1);
+			}
 		} else if (c.getColtype() == ColType.REQUIRED_BOOLEAN || c.getColtype() == ColType.OPTIONAL_BOOLEAN) {
-			return Boolean.valueOf(stringValue);
+			return Boolean.valueOf(decodedStringValue);
 		} else if (c.getColtype() == ColType.REQUIRED_NUMBER || c.getColtype() == ColType.OPTIONAL_NUMBER) {
-			return parseToFieldNumberType(stringValue, clazz);
+			return parseToFieldNumberType(decodedStringValue, clazz);
 		}
 		for (DBModelTable table : model.getModel()) {
 			if (table.getEntityClass() == clazz) {
 				for (DBModelColumn col : table) {
 					if (col.getColtype() == ColType.ID) {
-						if (stringValue == null && c.getColtype() == ColType.OPTIONAL_MANY_TO_ONE) {
+						if (decodedStringValue == null && c.getColtype() == ColType.OPTIONAL_MANY_TO_ONE) {
 							return null;
 						} else {
-							Object id = indexer.findId(Integer.parseInt(stringValue), table, col);
+							Object id = indexer.findId(Integer.parseInt(decodedStringValue), table, col);
 							Object reference = entityManager.find(clazz, id);
 							if (reference == null) {
 								throw new RuntimeException(clazz.getSimpleName() + " not found! ");
@@ -509,12 +517,12 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		Object genuineValue = null;
 		BeanWrapperImpl bwi = new BeanWrapperImpl(entity);
 
-		byte[] newValue;
+		byte[] newURIEncodedValue;
 		if (req.getHeader("x-" + c.getName().toLowerCase() + "-null") != null) {
-			newValue = null;
+			newURIEncodedValue = null;
 		} else {
 			try {
-				newValue = StreamUtils.copyToByteArray(req.getInputStream());
+				newURIEncodedValue = StreamUtils.copyToByteArray(req.getInputStream());
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -532,7 +540,7 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		case REQUIRED_BODY_DATA:
 		case REQUIRED_NUMBER:
 		case REQUIRED_STRING_OR_CHAR:
-			if (newValue == null)
+			if (newURIEncodedValue == null)
 				throw new RuntimeException("Must not be null: " + t + c);
 		case OPTIONAL_BODY_DATA:
 		case OPTIONAL_BOOLEAN:
@@ -549,38 +557,45 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		case REQUIRED_MANY_TO_ONE:
 			throw new RuntimeException("Not a simple field:" + t + c);
 		case OPTIONAL_BOOLEAN:
-			if (newValue == null) {
+			if (newURIEncodedValue == null) {
 				bwi.setPropertyValue(c.getName(), genuineValue = null);
 				break;
 			}
 		case REQUIRED_BOOLEAN:
-			bwi.setPropertyValue(c.getName(), genuineValue = Boolean.parseBoolean(new String(newValue)));
+			bwi.setPropertyValue(c.getName(), genuineValue = Boolean.parseBoolean(new String(newURIEncodedValue)));
 			break;
 
 		case OPTIONAL_BODY_DATA:
-			if (newValue == null) {
+			if (newURIEncodedValue == null) {
 				bwi.setPropertyValue(c.getName(), genuineValue = null);
 				break;
 			}
 		case REQUIRED_BODY_DATA:
-			bwi.setPropertyValue(c.getName(), genuineValue = newValue);
+			bwi.setPropertyValue(c.getName(), genuineValue = newURIEncodedValue);
 			break;
 
 		case OPTIONAL_NUMBER:
-			if (newValue == null) {
+			if (newURIEncodedValue == null) {
 				bwi.setPropertyValue(c.getName(), genuineValue = null);
 				break;
 			}
 		case REQUIRED_NUMBER:
-			bwi.setPropertyValue(c.getName(), genuineValue = parseToFieldNumberType(new String(newValue), c.getType()));
+			bwi.setPropertyValue(c.getName(),
+					genuineValue = parseToFieldNumberType(new String(newURIEncodedValue), c.getType()));
 			break;
 		case OPTIONAL_STRING_OR_CHAR:
-			if (newValue == null) {
+			if (newURIEncodedValue == null) {
 				bwi.setPropertyValue(c.getName(), genuineValue = null);
 				break;
 			}
 		case REQUIRED_STRING_OR_CHAR:
-			bwi.setPropertyValue(c.getName(), genuineValue = new String(newValue));
+			try {
+				genuineValue = URLDecoder.decode(new String(newURIEncodedValue).replace("+", "%2B"), "UTF-8")
+						.replace("%2B", "+");
+			} catch (UnsupportedEncodingException e1) {
+				throw new RuntimeException("UTF8 not supported!", e1);
+			}
+			bwi.setPropertyValue(c.getName(), genuineValue);
 			break;
 		}
 		Set<JavaScriptModificationListener> listeners = limit(this.listeners, entity, genuineValue);
@@ -789,25 +804,22 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		}
 	}
 
-	public <T> Set<T> limit(T[] irs, Object entity, Object fieldtype) {
+	public static <T> Set<T> limit(T[] irs, Object entity, Object fieldtype) {
 		Set<T> ts = new LinkedHashSet<T>();
 		for (T ir : irs) {
-			if (ir instanceof Advised) {
-				Advised advised = (Advised) ir;
-				java.lang.reflect.Type[] genericInterfaces = advised.getTargetClass().getGenericInterfaces();
-				for (java.lang.reflect.Type t : genericInterfaces) {
-					if (t instanceof ParameterizedType) {
-						ParameterizedType parameterizedType = (ParameterizedType) t;
-						Class generic1 = (Class) parameterizedType.getActualTypeArguments()[0];
-						if (fieldtype != null) {
-							Class generic2 = (Class) parameterizedType.getActualTypeArguments()[1];
-							if (generic1.isInstance(entity) && generic2.isInstance(entity)) {
-								ts.add(ir);
-							}
-						} else {
-							if (generic1.isInstance(entity)) {
-								ts.add(ir);
-							}
+			java.lang.reflect.Type[] genericInterfaces = ir.getClass().getGenericInterfaces();
+			for (java.lang.reflect.Type t : genericInterfaces) {
+				if (t instanceof ParameterizedType) {
+					ParameterizedType parameterizedType = (ParameterizedType) t;
+					Class generic1 = (Class) parameterizedType.getActualTypeArguments()[0];
+					if (fieldtype != null) {
+						Class generic2 = (Class) parameterizedType.getActualTypeArguments()[1];
+						if (generic1.isInstance(entity) && generic2.isInstance(fieldtype)) {
+							ts.add(ir);
+						}
+					} else {
+						if (generic1.isInstance(entity)) {
+							ts.add(ir);
 						}
 					}
 				}

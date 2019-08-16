@@ -194,9 +194,10 @@ public class JSMapperServlet extends HttpServlet {
 		case DETAILS:
 			String entity = f.getParentFile().getName();
 			String json = getController().getDetails(entity, Integer.parseInt(filename));
-			resp.setContentLength(json.length());
+			byte[] bytes = json.getBytes(UTF8);
+			resp.setContentLength(bytes.length);
 			resp.setContentType(JSON);
-			resp.getOutputStream().write(json.getBytes());
+			resp.getOutputStream().write(bytes);
 			break;
 		case JAVASCRIPT:
 			String javascriptCode = bean.getJavascriptCode();

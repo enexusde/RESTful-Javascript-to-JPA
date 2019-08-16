@@ -23,6 +23,8 @@ import java.util.Set;
 
 import javax.persistence.EntityManager;
 
+import org.springframework.core.Ordered;
+
 import de.e_nexus.web.jpa.js.mod.DBModelColumn;
 import de.e_nexus.web.jpa.js.mod.DBModelTable;
 
@@ -42,7 +44,7 @@ import de.e_nexus.web.jpa.js.mod.DBModelTable;
  * @param <FT> The type of property in the entity that is affected, relations
  *             match {@link Set}, or {@link List} but always {@link Collection}.
  */
-public interface JavaScriptModificationListener<T, FT> {
+public interface JavaScriptModificationListener<T, FT> extends Ordered {
 	/**
 	 * Before {@link EntityManager#persist(Object)} or
 	 * {@link EntityManager#remove(Object)} is called for recording into the

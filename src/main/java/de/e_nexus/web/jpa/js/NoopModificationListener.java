@@ -37,4 +37,9 @@ public class NoopModificationListener implements JavaScriptModificationListener<
 
 	}
 
+	@Override
+	public int getOrder() {
+		return -1;
+	}
+
 }
