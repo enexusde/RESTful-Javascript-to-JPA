@@ -38,7 +38,7 @@ public interface JSMapperController {
 
 	void deleteEntity(File f);
 
-	void updateRelation(File f, int newIndex, URL url);
+	void updateRelation(File f, Integer newIndex, URL url);
 
 	String getIndexById(String entity, int parseInt);
 

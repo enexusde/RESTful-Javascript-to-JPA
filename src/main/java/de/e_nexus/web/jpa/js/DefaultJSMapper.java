@@ -589,13 +589,7 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 				break;
 			}
 		case REQUIRED_STRING_OR_CHAR:
-			try {
-				genuineValue = URLDecoder.decode(new String(newURIEncodedValue).replace("+", "%2B"), "UTF-8")
-						.replace("%2B", "+");
-			} catch (UnsupportedEncodingException e1) {
-				throw new RuntimeException("UTF8 not supported!", e1);
-			}
-			bwi.setPropertyValue(c.getName(), genuineValue);
+			bwi.setPropertyValue(c.getName(), new String(newURIEncodedValue));
 			break;
 		}
 		Set<JavaScriptModificationListener> listeners = limit(this.listeners, entity, genuineValue);
@@ -655,7 +649,7 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 
 	@Override
 	@Transactional
-	public void updateRelation(File f, int newIndex, URL url) {
+	public void updateRelation(File f, Integer newIndex, URL url) {
 		String propertyName = f.getName();
 		int entityIndex = Integer.parseInt(f.getParentFile().getName());
 		String entityName = f.getParentFile().getParentFile().getName();
@@ -664,8 +658,16 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		for (DBModelColumn c : table) {
 			if (c.getName().equals(propertyName)) {
 				BeanWrapperImpl bwi = new BeanWrapperImpl(entity);
-				Object newId = indexer.findId(newIndex, model.getEntity(c.getType().getSimpleName()));
-				Object newValue = entityManager.find(c.getType(), newId);
+				Object newId;
+				if (newIndex == null)
+					newId = null;
+				else
+					newId = indexer.findId(newIndex, model.getEntity(c.getType().getSimpleName()));
+				Object newValue;
+				if (newId == null)
+					newValue = null;
+				else
+					newValue = entityManager.find(c.getType(), newId);
 				bwi.setPropertyValue(propertyName, newValue);
 				Set<JavaScriptModificationListener> listeners = limit(this.listeners, entity, newValue);
 				for (JavaScriptModificationListener l : listeners) {

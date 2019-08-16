@@ -152,7 +152,10 @@ public class JSMapperServlet extends HttpServlet {
 			getController().updateSimpleFieldValue(f, req, url);
 			break;
 		case UPDATE_RELATION:
-			int newIndex = Integer.parseInt(StreamUtils.copyToString(req.getInputStream(), UTF8));
+			String copyToString = StreamUtils.copyToString(req.getInputStream(), UTF8);
+			Integer newIndex = null;
+			if (copyToString.length() > 0)
+				newIndex = Integer.parseInt(copyToString);
 			getController().updateRelation(f, newIndex, url);
 		case ADD_N2M:
 			String data = StreamUtils.copyToString(req.getInputStream(), UTF8);
