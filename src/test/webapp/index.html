@@ -310,6 +310,26 @@ button {
 				throw 'Member of admin is not root!';
 			}
 			log('Successfully noticed root in admin.');
+			
+			
+			log('Add group "responsible".')
+			var resp = b.Group.push({
+				name:'Responsible'
+			});
+			log('Add user Tom group "responsible".');
+			b.Group[resp].users.push(b.User.push({name:'Tom'}));
+			log('Add user Scott group "responsible".');
+			b.Group[resp].users.push(b.User.push({name:'Scott'}));
+			log('Check order of users in responsible, first Tom then Scott.');
+			if (b.Group[resp].users[0].name!=='Tom')
+				throw 'First user must be Tom';
+			if (b.Group[resp].users[1].name!=='Scott')
+				throw 'Second user must be Scott';
+			log('Check order of users in responsible successfull.');
+			
+			
+			
+			
 		}
 	</script>
 </body>

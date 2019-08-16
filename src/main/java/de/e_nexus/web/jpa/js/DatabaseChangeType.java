@@ -15,8 +15,33 @@
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package de.e_nexus.web.jpa.js.mod;
+package de.e_nexus.web.jpa.js;
 
-public enum GetRequestType {
-	JAVASCRIPT, COUNT, DETAILS, INDEX_OF_ID, LAZY_BINARY_DATA_FIELD
+/**
+ * Represents the type of modification to the database throu JavaScript.
+ */
+public enum DatabaseChangeType {
+	/**
+	 * The insertion of a entity that not yet exists in the database.
+	 */
+	PLACE,
+	/**
+	 * The action for change a relation between two entitys. This modification does
+	 * not include the many-to-many relation between two entitys by an
+	 * relation-table.
+	 */
+	RELATION,
+	/**
+	 * The action for change a basic property but not a property that is used as an
+	 * relation between two entitys.
+	 */
+	PROPERTY_NOT_RELATION,
+	/**
+	 * The action for detach two entitys from each other.
+	 */
+	MANY_TO_MANY_RELATION,
+	/**
+	 * The action for remove an entity from the database.
+	 */
+	REMOVE
 }

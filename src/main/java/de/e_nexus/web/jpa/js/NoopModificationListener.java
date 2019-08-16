@@ -15,8 +15,26 @@
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, 
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package de.e_nexus.web.jpa.js.mod;
+package de.e_nexus.web.jpa.js;
 
-public enum GetRequestType {
-	JAVASCRIPT, COUNT, DETAILS, INDEX_OF_ID, LAZY_BINARY_DATA_FIELD
+import javax.inject.Named;
+
+import de.e_nexus.web.jpa.js.mod.DBModelColumn;
+import de.e_nexus.web.jpa.js.mod.DBModelTable;
+
+@Named
+public class NoopModificationListener implements JavaScriptModificationListener<Object, Object> {
+
+	@Override
+	public void beforePersist(DBModelTable table, DBModelColumn column, Object entity, Object fieldType,
+			DatabaseChangeType changeType) {
+
+	}
+
+	@Override
+	public void afterPersist(DBModelTable table, DBModelColumn column, Object entity, Object fieldType,
+			DatabaseChangeType changeType) {
+
+	}
+
 }

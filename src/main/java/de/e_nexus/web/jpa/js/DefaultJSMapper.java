@@ -1,8 +1,8 @@
-/**    ____  _____________________      __       __                  _____           _       __     __             _            
+/*     ____  _____________________      __       __                  _____           _       __     __             _
  *    / __ \/ ____/ ___/_  __/ __/_  __/ /      / /___ __   ______ _/ ___/__________(_)___  / /_   / /_____       (_)___  ____ _
  *   / /_/ / __/  \__ \ / / / /_/ / / / /  __  / / __ `/ | / / __ `/\__ \/ ___/ ___/ / __ \/ __/  / __/ __ \     / / __ \/ __ `/
- *  / _, _/ /___ ___/ // / / __/ /_/ / /  / /_/ / /_/ /| |/ / /_/ /___/ / /__/ /  / / /_/ / /_   / /_/ /_/ /    / / /_/ / /_/ / 
- * /_/ |_/_____//____//_/ /_/  \__,_/_/   \____/\__,_/ |___/\__,_//____/\___/_/  /_/ .___/\__/   \__/\____/  __/ / .___/\__,_/  
+ *  / _, _/ /___ ___/ // / / __/ /_/ / /  / /_/ / /_/ /| |/ / /_/ /___/ / /__/ /  / / /_/ / /_   / /_/ /_/ /    / / /_/ / /_/ /
+ * /_/ |_/_____//____//_/ /_/  \__,_/_/   \____/\__,_/ |___/\__,_//____/\___/_/  /_/ .___/\__/   \__/\____/  __/ / .___/\__,_/
  * Copyright 2019 by Peter Rader (e-nexus.de)                                     /_/                       /___/_/ 
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
@@ -23,7 +23,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.ParameterizedType;
 import java.net.URL;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
@@ -37,6 +39,7 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.springframework.aop.framework.Advised;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
@@ -75,6 +78,9 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 
 	@Inject
 	private final IndexFacade indexer = null;
+
+	@Inject
+	private final JavaScriptModificationListener<?, ?>[] listeners = null;
 
 	@Inject
 	private final StringSerializer serializer = null;
@@ -203,7 +209,22 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 				}
 
 			}
+			Set<JavaScriptModificationListener> listeners = limit(this.listeners, entity, null);
+			for (JavaScriptModificationListener l : listeners) {
+				try {
+					l.beforePersist(t, null, entity, null, DatabaseChangeType.PLACE);
+				} catch (Exception e) {
+					LOG.log(Level.SEVERE, "Calling js-listener " + l, e);
+				}
+			}
 			entityManager.persist(entity);
+			for (JavaScriptModificationListener l : listeners) {
+				try {
+					l.afterPersist(t, null, entity, null, DatabaseChangeType.PLACE);
+				} catch (Exception e) {
+					LOG.log(Level.SEVERE, "Calling js-listener " + l, e);
+				}
+			}
 			return entity;
 		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
 				| InvocationTargetException e) {
@@ -485,6 +506,7 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 
 		Object entityId = indexer.findId(Integer.parseInt(index), t);
 		Object entity = entityManager.find(t.getEntityClass(), entityId);
+		Object genuineValue = null;
 		BeanWrapperImpl bwi = new BeanWrapperImpl(entity);
 
 		byte[] newValue;
@@ -528,40 +550,55 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 			throw new RuntimeException("Not a simple field:" + t + c);
 		case OPTIONAL_BOOLEAN:
 			if (newValue == null) {
-				bwi.setPropertyValue(c.getName(), null);
+				bwi.setPropertyValue(c.getName(), genuineValue = null);
 				break;
 			}
 		case REQUIRED_BOOLEAN:
-			bwi.setPropertyValue(c.getName(), Boolean.parseBoolean(new String(newValue)));
+			bwi.setPropertyValue(c.getName(), genuineValue = Boolean.parseBoolean(new String(newValue)));
 			break;
 
 		case OPTIONAL_BODY_DATA:
 			if (newValue == null) {
-				bwi.setPropertyValue(c.getName(), null);
+				bwi.setPropertyValue(c.getName(), genuineValue = null);
 				break;
 			}
 		case REQUIRED_BODY_DATA:
-			bwi.setPropertyValue(c.getName(), newValue);
+			bwi.setPropertyValue(c.getName(), genuineValue = newValue);
 			break;
 
 		case OPTIONAL_NUMBER:
 			if (newValue == null) {
-				bwi.setPropertyValue(c.getName(), null);
+				bwi.setPropertyValue(c.getName(), genuineValue = null);
 				break;
 			}
 		case REQUIRED_NUMBER:
-			bwi.setPropertyValue(c.getName(), parseToFieldNumberType(new String(newValue), c.getType()));
+			bwi.setPropertyValue(c.getName(), genuineValue = parseToFieldNumberType(new String(newValue), c.getType()));
 			break;
 		case OPTIONAL_STRING_OR_CHAR:
 			if (newValue == null) {
-				bwi.setPropertyValue(c.getName(), null);
+				bwi.setPropertyValue(c.getName(), genuineValue = null);
 				break;
 			}
 		case REQUIRED_STRING_OR_CHAR:
-			bwi.setPropertyValue(c.getName(), new String(newValue));
+			bwi.setPropertyValue(c.getName(), genuineValue = new String(newValue));
 			break;
 		}
+		Set<JavaScriptModificationListener> listeners = limit(this.listeners, entity, genuineValue);
+		for (JavaScriptModificationListener l : listeners) {
+			try {
+				l.beforePersist(t, c, entity, genuineValue, DatabaseChangeType.PROPERTY_NOT_RELATION);
+			} catch (Exception e) {
+				LOG.log(Level.SEVERE, "Calling js-listener " + l, e);
+			}
+		}
 		entityManager.persist(entity);
+		for (JavaScriptModificationListener l : listeners) {
+			try {
+				l.afterPersist(t, c, entity, genuineValue, DatabaseChangeType.PROPERTY_NOT_RELATION);
+			} catch (Exception e) {
+				LOG.log(Level.SEVERE, "Calling js-listener " + l, e);
+			}
+		}
 	}
 
 	@Override
@@ -583,7 +620,22 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 
 		Object id = indexer.findId(Integer.parseInt(f.getName()), entityTable, idCol);
 		Object entity = entityManager.find(entityTable.getEntityClass(), id);
+		Set<JavaScriptModificationListener> listeners = limit(this.listeners, entity, null);
+		for (JavaScriptModificationListener l : listeners) {
+			try {
+				l.beforePersist(entityTable, null, entity, null, DatabaseChangeType.REMOVE);
+			} catch (Exception e) {
+				LOG.log(Level.SEVERE, "Calling js-listener " + l, e);
+			}
+		}
 		entityManager.remove(entity);
+		for (JavaScriptModificationListener l : listeners) {
+			try {
+				l.beforePersist(entityTable, null, entity, null, DatabaseChangeType.REMOVE);
+			} catch (Exception e) {
+				LOG.log(Level.SEVERE, "Calling js-listener " + l, e);
+			}
+		}
 	}
 
 	@Override
@@ -600,7 +652,22 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 				Object newId = indexer.findId(newIndex, model.getEntity(c.getType().getSimpleName()));
 				Object newValue = entityManager.find(c.getType(), newId);
 				bwi.setPropertyValue(propertyName, newValue);
+				Set<JavaScriptModificationListener> listeners = limit(this.listeners, entity, newValue);
+				for (JavaScriptModificationListener l : listeners) {
+					try {
+						l.beforePersist(table, c, entity, newValue, DatabaseChangeType.RELATION);
+					} catch (Exception e) {
+						LOG.log(Level.SEVERE, "Calling js-listener " + l, e);
+					}
+				}
 				entityManager.persist(entity);
+				for (JavaScriptModificationListener l : listeners) {
+					try {
+						l.afterPersist(table, c, entity, newValue, DatabaseChangeType.RELATION);
+					} catch (Exception e) {
+						LOG.log(Level.SEVERE, "Calling js-listener " + l, e);
+					}
+				}
 				return;
 			}
 		}
@@ -685,22 +752,68 @@ public class DefaultJSMapper implements JSMapperHandler, JSMapperController {
 		if (ownerColumn.getColtype() == ColType.MANY_TO_MANY_NON_OWNER) {
 			for (DBModelColumn dbModelColumn : nonOwnerMapping) {
 				if (dbModelColumn.getName().equals(ownerColumn.getN2mOppositeProperty())) {
-					addN2M(dbModelColumn, nonOwnerEntity, ownerEntity);
+					addN2M(nonOwnerMapping, dbModelColumn, nonOwnerEntity, ownerEntity);
 					return;
 				}
 			}
 		} else {
-			addN2M(ownerColumn, ownerEntity, nonOwnerEntity);
+			addN2M(ownerMapping, ownerColumn, ownerEntity, nonOwnerEntity);
 		}
 	}
 
-	private void addN2M(DBModelColumn ownerColumn, Object ownerEntity, Object nonOwnerEntity) {
+	private void addN2M(DBModelTable ownerMapping, DBModelColumn ownerColumn, Object ownerEntity,
+			Object nonOwnerEntity) {
 		BeanWrapperImpl bwi = new BeanWrapperImpl(ownerEntity);
 		Object collection = bwi.getPropertyValue(ownerColumn.getName());
 		if (collection instanceof Set) {
 			Set set = (Set) collection;
 			set.add(nonOwnerEntity);
+			Set<JavaScriptModificationListener> listeners = limit(this.listeners, ownerEntity, nonOwnerEntity);
+			for (JavaScriptModificationListener l : listeners) {
+				try {
+					l.beforePersist(ownerMapping, ownerColumn, ownerEntity, nonOwnerEntity,
+							DatabaseChangeType.MANY_TO_MANY_RELATION);
+				} catch (Exception e) {
+					LOG.log(Level.SEVERE, "Calling js-listener " + l, e);
+				}
+			}
 			entityManager.persist(ownerEntity);
+			for (JavaScriptModificationListener l : listeners) {
+				try {
+					l.beforePersist(ownerMapping, ownerColumn, ownerEntity, nonOwnerEntity,
+							DatabaseChangeType.MANY_TO_MANY_RELATION);
+				} catch (Exception e) {
+					LOG.log(Level.SEVERE, "Calling js-listener " + l, e);
+				}
+			}
 		}
 	}
+
+	public <T> Set<T> limit(T[] irs, Object entity, Object fieldtype) {
+		Set<T> ts = new LinkedHashSet<T>();
+		for (T ir : irs) {
+			if (ir instanceof Advised) {
+				Advised advised = (Advised) ir;
+				java.lang.reflect.Type[] genericInterfaces = advised.getTargetClass().getGenericInterfaces();
+				for (java.lang.reflect.Type t : genericInterfaces) {
+					if (t instanceof ParameterizedType) {
+						ParameterizedType parameterizedType = (ParameterizedType) t;
+						Class generic1 = (Class) parameterizedType.getActualTypeArguments()[0];
+						if (fieldtype != null) {
+							Class generic2 = (Class) parameterizedType.getActualTypeArguments()[1];
+							if (generic1.isInstance(entity) && generic2.isInstance(entity)) {
+								ts.add(ir);
+							}
+						} else {
+							if (generic1.isInstance(entity)) {
+								ts.add(ir);
+							}
+						}
+					}
+				}
+			}
+		}
+		return ts;
+	}
+
 }
