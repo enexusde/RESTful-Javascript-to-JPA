@@ -21,4 +21,6 @@ import java.util.LinkedHashSet;
 
 public class DBSchemaModel extends LinkedHashSet<DBModelTable> {
 
+	private static final long serialVersionUID = -6862528166470288985L;
+
 }

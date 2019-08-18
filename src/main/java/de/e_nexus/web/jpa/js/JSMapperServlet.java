@@ -84,7 +84,6 @@ public class JSMapperServlet extends HttpServlet {
 		URL url = new URL(urls.toString());
 		File f = new File(url.getFile());
 		String filename = f.getName();
-		JSMapperHandler bean = getHandler();
 		ServletInputStream inputStream = req.getInputStream();
 		byte[] copyToByteArray = StreamUtils.copyToByteArray(inputStream);
 		Map<String, String> headers = new LinkedHashMap<String, String>(0);

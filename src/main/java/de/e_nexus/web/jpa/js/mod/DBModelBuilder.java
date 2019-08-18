@@ -58,7 +58,7 @@ public class DBModelBuilder {
 				String oppositePropery = null;
 				if (Collection.class.isAssignableFrom(javaType)) {
 					if (attribute instanceof PluralAttribute) {
-						PluralAttribute pluralPersistentAttribute = (PluralAttribute) attribute;
+						PluralAttribute<?, ?, ?> pluralPersistentAttribute = (PluralAttribute<?, ?, ?>) attribute;
 						Member member = pluralPersistentAttribute.getJavaMember();
 						if (member instanceof Method) {
 							Method method = (Method) member;
@@ -87,8 +87,8 @@ public class DBModelBuilder {
 		PersistentAttributeType at = attribute.getPersistentAttributeType();
 		if (at == PersistentAttributeType.BASIC) {
 			if (attribute instanceof SingularAttribute) {
-				SingularAttribute sa = (SingularAttribute) attribute;
-				Class jt = sa.getJavaType();
+				SingularAttribute<?, ?> sa = (SingularAttribute<?, ?>) attribute;
+				Class<?> jt = sa.getJavaType();
 				if (sa.isOptional()) {
 					if (String.class.isAssignableFrom(jt) || char.class == jt || Character.class == jt) {
 						return ColType.OPTIONAL_STRING_OR_CHAR;

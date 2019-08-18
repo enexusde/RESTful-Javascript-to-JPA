@@ -43,7 +43,7 @@ public class DBModelColumn {
 	 * 
 	 * @return The class of the entity.
 	 */
-	public Class getType() {
+	public Class<?> getType() {
 		return type;
 	}
 

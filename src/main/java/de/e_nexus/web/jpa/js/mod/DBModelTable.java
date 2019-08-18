@@ -21,6 +21,7 @@ import java.util.LinkedHashSet;
 
 public class DBModelTable extends LinkedHashSet<DBModelColumn> {
 
+	private static final long serialVersionUID = -8237862087424082654L;
 	private final Class<?> entityClass;
 
 	public DBModelTable(Class<?> entityClass) {
