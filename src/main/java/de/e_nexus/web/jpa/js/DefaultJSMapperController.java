@@ -179,7 +179,7 @@ public class DefaultJSMapperController implements JSMapperController {
 		entityManager.remove(entity);
 		for (JavaScriptModificationListener l : listeners) {
 			try {
-				l.beforePersist(entityTable, null, entity, null, DatabaseChangeType.REMOVE);
+				l.afterPersist(entityTable, null, entity, null, DatabaseChangeType.REMOVE);
 			} catch (Exception e) {
 				LOG.log(Level.SEVERE, "Calling js-listener " + l, e);
 			}
@@ -294,7 +294,7 @@ public class DefaultJSMapperController implements JSMapperController {
 			entityManager.persist(ownerEntity);
 			for (JavaScriptModificationListener l : listeners) {
 				try {
-					l.beforePersist(ownerMapping, ownerColumn, ownerEntity, nonOwnerEntity,
+					l.afterPersist(ownerMapping, ownerColumn, ownerEntity, nonOwnerEntity,
 							DatabaseChangeType.MANY_TO_MANY_RELATION);
 				} catch (Exception e) {
 					LOG.log(Level.SEVERE, "Calling js-listener " + l, e);
