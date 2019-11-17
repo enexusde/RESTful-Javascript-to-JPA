@@ -477,7 +477,7 @@ public class DefaultJSMapperController implements JSMapperController {
 					if (!first) {
 						sb.append(",");
 					}
-					sb.append(indexer.getIndexById(id, ownerIdCol, ownerTable));
+					sb.append(indexer.getIndexById(id, foreignIdCol, foreignTable));
 					first = false;
 				}
 				sb.append("]");
