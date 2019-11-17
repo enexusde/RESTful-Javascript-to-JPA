@@ -22,6 +22,14 @@ public class IndexFacade {
 	@Inject
 	private final DBModelHolder model = null;
 
+	/**
+	 * Get the index-value instead of the id.
+	 * 
+	 * @param o The id value of the instance, never <code>null</code>.
+	 * @param c The abstraction of the id column, never <code>null</code>.
+	 * @param t The table of the entity, never <code>null</code>.
+	 * @return The index of the entity, never <code>null</code>.
+	 */
 	public Number getIndexById(Object o, DBModelColumn c, DBModelTable t) {
 		Query query = entityManager.createQuery("SELECT e." + c.getName() + " FROM " + t.getName() + " e WHERE e."
 				+ c.getName() + " < " + o + " ORDER BY " + c.getName() + " DESC");

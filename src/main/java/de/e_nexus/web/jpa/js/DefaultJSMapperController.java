@@ -24,6 +24,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
@@ -444,12 +445,39 @@ public class DefaultJSMapperController implements JSMapperController {
 				sb.append("null");
 			} else if (val instanceof Set) {
 				sb.append("[");
+				DBModelColumn ownerIdCol = null;
+				DBModelColumn foreignIdCol = null;
+				DBModelTable foreignTable = null;
+				DBModelTable ownerTable = null;
 				boolean first = true;
-				for (Object object : (Set<?>) val) {
+				for (DBModelTable table : model.getModel()) {
+					if (table.getEntityClass() == c.getType()) {
+						foreignTable = table;
+						for (DBModelColumn col : table) {
+							if (col.getColtype() == ColType.ID) {
+								foreignIdCol = col;
+							}
+						}
+					}
+					if (table.getEntityClass() == bwi.getRootClass()) {
+						ownerTable = table;
+						for (DBModelColumn col : table) {
+							if (col.getColtype() == ColType.ID) {
+								ownerIdCol = col;
+							}
+						}
+					}
+				}
+
+				String idQuery = "SELECT r." + foreignIdCol.getName() + " FROM "
+						+ ownerTable.getEntityClass().getCanonicalName() + " o RIGHT JOIN o." + c.getName()
+						+ " r WHERE o." + ownerIdCol.getName() + "=:oid";
+				for (Object id : entityManager.createQuery(idQuery, foreignIdCol.getType())
+						.setParameter("oid", bwi.getPropertyValue(ownerIdCol.getName())).getResultList()) {
 					if (!first) {
 						sb.append(",");
 					}
-					sb.append(getIndex(object));
+					sb.append(indexer.getIndexById(id, ownerIdCol, ownerTable));
 					first = false;
 				}
 				sb.append("]");
