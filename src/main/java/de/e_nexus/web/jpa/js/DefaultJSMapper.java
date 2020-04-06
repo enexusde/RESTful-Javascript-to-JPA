@@ -25,6 +25,7 @@ import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.persistence.EntityManager;
@@ -47,6 +48,11 @@ import de.e_nexus.web.jpa.js.mod.PushRequestType;
 
 @Named
 public class DefaultJSMapper implements JSMapperHandler {
+
+	@PostConstruct
+	public void info() {
+		LOG.info("-- Constructed JS Mapper for ReSTful javascript to JPA3 --");
+	}
 
 	private static final String JS_CODE;
 	static {
@@ -105,8 +111,7 @@ public class DefaultJSMapper implements JSMapperHandler {
 				sb.append(c.getName());
 				sb.append(":{t:");
 				sb.append(c.getColtype().ordinal());
-				if (c.getColtype() == ColType.ONE_TO_MANY || c.getColtype() == ColType.REQUIRED_MANY_TO_ONE
-						|| c.getColtype() == ColType.MANY_TO_MANY_NON_OWNER
+				if (c.getColtype() == ColType.ONE_TO_MANY || c.getColtype() == ColType.REQUIRED_MANY_TO_ONE || c.getColtype() == ColType.MANY_TO_MANY_NON_OWNER
 						|| c.getColtype() == ColType.MANY_TO_MANY_OWNER) {
 					sb.append(",type:'");
 					sb.append(c.getType().getSimpleName());
