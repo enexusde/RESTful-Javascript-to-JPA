@@ -38,7 +38,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @Configuration
 @EnableTransactionManagement
 @ComponentScan("de.e_nexus.web.jpa.js")
-public class AppConfig {
+public class AppConfig extends WebMvcConfigurerAdapter {
 
 	@Bean
 	protected LocalContainerEntityManagerFactoryBean emf(DataSource dataSource) throws SQLException {
@@ -48,8 +48,7 @@ public class AppConfig {
 		emf.setDataSource(dataSource);
 		final StandardDialectResolver resolver = new StandardDialectResolver();
 		try {
-			final Dialect dialect = resolver.resolveDialect(
-					new DatabaseMetaDataDialectResolutionInfoAdapter(dataSource.getConnection().getMetaData()));
+			final Dialect dialect = resolver.resolveDialect(new DatabaseMetaDataDialectResolutionInfoAdapter(dataSource.getConnection().getMetaData()));
 			emf.getJpaPropertyMap().put(Environment.DIALECT, dialect.getClass().getCanonicalName());
 		} catch (SQLException databaseProblem) {
 			databaseProblem.printStackTrace();
@@ -57,6 +56,11 @@ public class AppConfig {
 		emf.getJpaPropertyMap().put(Environment.SHOW_SQL, true);
 		emf.getJpaPropertyMap().put(Environment.HBM2DDL_AUTO, "update");
 		return emf;
+	}
+
+	@Override
+	public void addResourceHandlers(ResourceHandlerRegistry registry) {
+		registry.addResourceHandler("/**").addResourceLocations("classpath:/META-INF/resources/");
 	}
 
 	/**
@@ -75,8 +79,7 @@ public class AppConfig {
 	 * This includes the {@link @Transactional Transactional}-annotation.
 	 */
 	@Bean
-	protected PlatformTransactionManager transactionManager(
-			LocalContainerEntityManagerFactoryBean entityManagerFactory) {
+	protected PlatformTransactionManager transactionManager(LocalContainerEntityManagerFactoryBean entityManagerFactory) {
 		final EntityManagerFactory factory = entityManagerFactory.getObject();
 		final JpaTransactionManager manager = new JpaTransactionManager(factory);
 		return manager;

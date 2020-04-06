@@ -24,6 +24,10 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -85,9 +89,7 @@ public class DefaultJSMapperController implements JSMapperController {
 	@Transactional
 	@Override
 	public void doGetCount(DBModelTable dbModelTable, HttpServletResponse resp) throws IOException {
-		Number n = entityManager
-				.createQuery("SELECT COUNT(id) FROM " + dbModelTable.getEntityClass().getCanonicalName(), Number.class)
-				.getSingleResult();
+		Number n = entityManager.createQuery("SELECT COUNT(id) FROM " + dbModelTable.getEntityClass().getCanonicalName(), Number.class).getSingleResult();
 		StringBuilder sb = new StringBuilder();
 		sb.append("{\"count\":");
 		sb.append(n);
@@ -275,19 +277,16 @@ public class DefaultJSMapperController implements JSMapperController {
 		}
 	}
 
-	private void addN2M(DBModelTable ownerMapping, DBModelColumn ownerColumn, Object ownerEntity,
-			Object nonOwnerEntity) {
+	private void addN2M(DBModelTable ownerMapping, DBModelColumn ownerColumn, Object ownerEntity, Object nonOwnerEntity) {
 		BeanWrapperImpl bwi = new BeanWrapperImpl(ownerEntity);
 		Object collection = bwi.getPropertyValue(ownerColumn.getName());
 		if (collection instanceof Set) {
 			Set<Object> set = (Set<Object>) collection;
 			set.add(nonOwnerEntity);
-			Set<JavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, ownerEntity,
-					nonOwnerEntity);
+			Set<JavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, ownerEntity, nonOwnerEntity);
 			for (JavaScriptModificationListener l : listeners) {
 				try {
-					l.beforePersist(ownerMapping, ownerColumn, ownerEntity, nonOwnerEntity,
-							DatabaseChangeType.MANY_TO_MANY_RELATION);
+					l.beforePersist(ownerMapping, ownerColumn, ownerEntity, nonOwnerEntity, DatabaseChangeType.MANY_TO_MANY_RELATION);
 				} catch (Exception e) {
 					LOG.log(Level.SEVERE, "Calling js-listener " + l, e);
 				}
@@ -295,8 +294,7 @@ public class DefaultJSMapperController implements JSMapperController {
 			entityManager.persist(ownerEntity);
 			for (JavaScriptModificationListener l : listeners) {
 				try {
-					l.afterPersist(ownerMapping, ownerColumn, ownerEntity, nonOwnerEntity,
-							DatabaseChangeType.MANY_TO_MANY_RELATION);
+					l.afterPersist(ownerMapping, ownerColumn, ownerEntity, nonOwnerEntity, DatabaseChangeType.MANY_TO_MANY_RELATION);
 				} catch (Exception e) {
 					LOG.log(Level.SEVERE, "Calling js-listener " + l, e);
 				}
@@ -313,8 +311,29 @@ public class DefaultJSMapperController implements JSMapperController {
 			return Byte.valueOf(stringValue);
 		} else if (clazz == short.class || clazz == short.class) {
 			return Short.valueOf(stringValue);
+		} else if (clazz == Timestamp.class) {
+			return parseTimestamp(stringValue);
 		} else {
 			throw new RuntimeException("Unknown number type: " + clazz);
+		}
+	}
+
+	private Timestamp parseTimestamp(String stringValue) {
+		try {
+			stringValue = URLDecoder.decode(stringValue, "utf8");
+		} catch (UnsupportedEncodingException e) {
+			throw new RuntimeException(e);
+		}
+		try {
+			return Timestamp.valueOf(stringValue);
+		} catch (IllegalArgumentException wrongFormat) {
+			SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+			try {
+				Date d = sdf.parse(stringValue);
+				return new Timestamp(d.getTime());
+			} catch (ParseException e) {
+				throw new RuntimeException(e);
+			}
 		}
 	}
 
@@ -331,6 +350,8 @@ public class DefaultJSMapperController implements JSMapperController {
 		} else if (c.getColtype() == ColType.REQUIRED_BOOLEAN || c.getColtype() == ColType.OPTIONAL_BOOLEAN) {
 			return Boolean.valueOf(decodedStringValue);
 		} else if (c.getColtype() == ColType.REQUIRED_NUMBER || c.getColtype() == ColType.OPTIONAL_NUMBER) {
+			return parseToFieldNumberType(decodedStringValue, clazz);
+		} else if (c.getColtype() == ColType.REQUIRED_TIMESTAMP) {
 			return parseToFieldNumberType(decodedStringValue, clazz);
 		}
 		for (DBModelTable table : model.getModel()) {
@@ -378,6 +399,7 @@ public class DefaultJSMapperController implements JSMapperController {
 				case REQUIRED_BOOLEAN:
 				case REQUIRED_NUMBER:
 				case REQUIRED_STRING_OR_CHAR:
+				case REQUIRED_TIMESTAMP:
 				case REQUIRED_MANY_TO_ONE:
 				case OPTIONAL_MANY_TO_ONE:
 					pd.getWriteMethod().invoke(entity, isnull ? null : sanitize(c, string, pd.getPropertyType(), t));
@@ -404,8 +426,7 @@ public class DefaultJSMapperController implements JSMapperController {
 				}
 			}
 			return entity;
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-				| InvocationTargetException e) {
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -469,11 +490,10 @@ public class DefaultJSMapperController implements JSMapperController {
 					}
 				}
 
-				String idQuery = "SELECT r." + foreignIdCol.getName() + " FROM "
-						+ ownerTable.getEntityClass().getCanonicalName() + " o RIGHT JOIN o." + c.getName()
-						+ " r WHERE o." + ownerIdCol.getName() + "=:oid";
-				for (Object id : entityManager.createQuery(idQuery, foreignIdCol.getType())
-						.setParameter("oid", bwi.getPropertyValue(ownerIdCol.getName())).getResultList()) {
+				String idQuery = "SELECT r." + foreignIdCol.getName() + " FROM " + ownerTable.getEntityClass().getCanonicalName() + " o RIGHT JOIN o."
+						+ c.getName() + " r WHERE o." + ownerIdCol.getName() + "=:oid";
+				for (Object id : entityManager.createQuery(idQuery, foreignIdCol.getType()).setParameter("oid", bwi.getPropertyValue(ownerIdCol.getName()))
+						.getResultList()) {
 					if (!first) {
 						sb.append(",");
 					}
@@ -608,8 +628,7 @@ public class DefaultJSMapperController implements JSMapperController {
 				break;
 			}
 		case REQUIRED_NUMBER:
-			bwi.setPropertyValue(c.getName(),
-					genuineValue = parseToFieldNumberType(new String(newURIEncodedValue), c.getType()));
+			bwi.setPropertyValue(c.getName(), genuineValue = parseToFieldNumberType(new String(newURIEncodedValue), c.getType()));
 			break;
 		case OPTIONAL_STRING_OR_CHAR:
 			if (newURIEncodedValue == null) {

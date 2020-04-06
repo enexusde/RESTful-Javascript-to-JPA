@@ -20,6 +20,7 @@ package de.e_nexus.web.jpa.js.mod;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.logging.Logger;
 
@@ -66,8 +67,7 @@ public class DBModelBuilder {
 								if (anno instanceof ManyToMany) {
 									ManyToMany manyToMany = (ManyToMany) anno;
 									if (manyToMany.mappedBy() == null) {
-										throw new RuntimeException(
-												"Many-to-many annotation must have a mappedBy-value!");
+										throw new RuntimeException("Many-to-many annotation must have a mappedBy-value!");
 									}
 									oppositePropery = manyToMany.mappedBy();
 								}
@@ -93,8 +93,8 @@ public class DBModelBuilder {
 					if (String.class.isAssignableFrom(jt) || char.class == jt || Character.class == jt) {
 						return ColType.OPTIONAL_STRING_OR_CHAR;
 					}
-					if (Number.class.isAssignableFrom(jt) || jt == long.class || jt == byte.class || jt == int.class
-							|| jt == short.class || jt == float.class || jt == double.class) {
+					if (Number.class.isAssignableFrom(jt) || jt == long.class || jt == byte.class || jt == int.class || jt == short.class || jt == float.class
+							|| jt == double.class) {
 						return ColType.OPTIONAL_NUMBER;
 					}
 					if (Boolean.class == jt || boolean.class == jt) {
@@ -114,12 +114,15 @@ public class DBModelBuilder {
 				if (String.class.isAssignableFrom(jt) || char.class == jt || Character.class == jt) {
 					return ColType.REQUIRED_STRING_OR_CHAR;
 				}
-				if (Number.class.isAssignableFrom(jt) || jt == long.class || jt == byte.class || jt == int.class
-						|| jt == short.class || jt == float.class || jt == double.class) {
+				if (Number.class.isAssignableFrom(jt) || jt == long.class || jt == byte.class || jt == int.class || jt == short.class || jt == float.class
+						|| jt == double.class) {
 					return ColType.REQUIRED_NUMBER;
 				}
 				if (Boolean.class == jt || boolean.class == jt) {
 					return ColType.REQUIRED_BOOLEAN;
+				}
+				if (Timestamp.class == jt) {
+					return ColType.REQUIRED_TIMESTAMP;
 				}
 				if (byte[].class == jt || Byte[].class == jt) {
 					return ColType.REQUIRED_BODY_DATA;
@@ -156,6 +159,7 @@ public class DBModelBuilder {
 				return owningSide ? ColType.MANY_TO_MANY_OWNER : ColType.MANY_TO_MANY_NON_OWNER;
 			}
 		}
+		LOG.severe("Can not find type: " + at);
 		return null;
 	}
 
