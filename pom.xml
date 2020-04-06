@@ -13,7 +13,7 @@
 	</properties>
 	<groupId>com.sotacms</groupId>
 	<artifactId>restfuljs2jpa</artifactId>
-	<version>1.0.1-SNAPSHOT</version>
+	<version>1.0.2-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<dependencies><!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-simple -->
 		<dependency>
