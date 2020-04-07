@@ -272,6 +272,9 @@ function build(jsm, urlContextWithTailingSlash) {
 							}
 							if (typeof json.id === 'number') {
 								val = json.id;
+								if (typeof cb === 'function') {
+									cb(json);
+								}
 							}
 						}
 					}

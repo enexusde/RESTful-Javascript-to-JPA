@@ -313,6 +313,8 @@ public class DefaultJSMapperController implements JSMapperController {
 			return Short.valueOf(stringValue);
 		} else if (clazz == Timestamp.class) {
 			return parseTimestamp(stringValue);
+		} else if (clazz == double.class) {
+			return Double.parseDouble(stringValue);
 		} else {
 			throw new RuntimeException("Unknown number type: " + clazz);
 		}
