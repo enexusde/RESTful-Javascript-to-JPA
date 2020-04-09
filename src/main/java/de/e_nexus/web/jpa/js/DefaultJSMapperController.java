@@ -46,6 +46,7 @@ import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
 
+import de.e_nexus.web.jpa.js.masker.DBColumnSimpleValueMasquerade;
 import de.e_nexus.web.jpa.js.mod.ColType;
 import de.e_nexus.web.jpa.js.mod.DBModelColumn;
 import de.e_nexus.web.jpa.js.mod.DBModelHolder;
@@ -60,6 +61,9 @@ public class DefaultJSMapperController implements JSMapperController {
 
 	@Inject
 	private final JavaScriptModificationListener<?, ?>[] listeners = null;
+
+	@Inject
+	private final DBColumnSimpleValueMasquerade[] masquerades = {};
 
 	@Inject
 	private final IndexFacade indexer = null;
@@ -509,23 +513,38 @@ public class DefaultJSMapperController implements JSMapperController {
 			break;
 		case OPTIONAL_BOOLEAN:
 		case REQUIRED_BOOLEAN:
-			Object sv = bwi.getPropertyValue(c.getName());
-			sb.append(sv);
+			Object designatedBooleanValue = bwi.getPropertyValue(c.getName());
+			for (DBColumnSimpleValueMasquerade k : masquerades) {
+				designatedBooleanValue = k.masquerade(designatedBooleanValue, c, bwi.getRootInstance());
+			}
+			sb.append(designatedBooleanValue);
 			break;
 		case OPTIONAL_NUMBER:
-		case REQUIRED_NUMBER:
-			sb.append(bwi.getPropertyValue(c.getName()));
+		case REQUIRED_NUMBER: {
+			Object designatedNumberValue = bwi.getPropertyValue(c.getName());
+			for (DBColumnSimpleValueMasquerade k : masquerades) {
+				designatedNumberValue = k.masquerade(designatedNumberValue, c, bwi.getRootInstance());
+			}
+			sb.append(designatedNumberValue);
+		}
 			break;
 		case OPTIONAL_STRING_OR_CHAR:
-			Object str = bwi.getPropertyValue(c.getName());
-			if (str == null) {
+			Object designatedStringValue = bwi.getPropertyValue(c.getName());
+			for (DBColumnSimpleValueMasquerade k : masquerades) {
+				designatedStringValue = k.masquerade(designatedStringValue, c, bwi.getRootInstance());
+			}
+			if (designatedStringValue == null) {
 				sb.append("null");
 			} else {
-				sb.append(serializer.utf8String("" + str));
+				sb.append(serializer.utf8String("" + designatedStringValue));
 			}
 			break;
 		case REQUIRED_STRING_OR_CHAR:
-			sb.append(serializer.utf8String("" + bwi.getPropertyValue(c.getName())));
+			Object designatedStringRequiredValue = bwi.getPropertyValue(c.getName());
+			for (DBColumnSimpleValueMasquerade k : masquerades) {
+				designatedStringRequiredValue = k.masquerade(designatedStringRequiredValue, c, bwi.getRootInstance());
+			}
+			sb.append(serializer.utf8String("" + designatedStringRequiredValue));
 			break;
 		case REQUIRED_BODY_DATA:
 		case OPTIONAL_BODY_DATA:
