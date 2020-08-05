@@ -13,9 +13,9 @@
 	</properties>
 	<groupId>com.sotacms</groupId>
 	<artifactId>restfuljs2jpa</artifactId>
-	<version>1.0.3-SNAPSHOT</version>
+	<version>1.0.3</version>
 	<packaging>jar</packaging>
-	<dependencies><!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-simple -->
+	<dependencies>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-simple</artifactId>
@@ -90,5 +90,5 @@
 			</plugin>
 		</plugins>
 	</build>
-	
+
 </project>
