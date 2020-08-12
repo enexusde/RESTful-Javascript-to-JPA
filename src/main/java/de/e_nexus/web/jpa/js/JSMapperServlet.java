@@ -47,6 +47,9 @@ import de.e_nexus.web.jpa.js.mod.GetRequestType;
 
 @WebServlet(urlPatterns = { "/jms/*" })
 public class JSMapperServlet extends HttpServlet {
+	/**
+	 * The logger for the the servlet.
+	 */
 	private static final Logger LOG = Logger.getLogger(JSMapperServlet.class.getCanonicalName());
 
 	private static final String UTF8NAME = "utf-8";
