@@ -156,6 +156,7 @@ public class JSMapperServlet extends HttpServlet {
 			if (copyToString.length() > 0)
 				newIndex = Integer.parseInt(copyToString);
 			getController().updateRelation(f, newIndex, url);
+			break;
 		case ADD_N2M:
 			String data = StreamUtils.copyToString(req.getInputStream(), UTF8);
 			getController().addN2M(f, data);

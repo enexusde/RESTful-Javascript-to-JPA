@@ -110,8 +110,13 @@ public class DefaultJSMapper implements JSMapperHandler {
 				}
 				sb.append(c.getName());
 				sb.append(":{t:");
+				if (c.getColtype() == null) {
+					throw new RuntimeException("Type of " + t + "." + c
+							+ " is unknown but must be known in order to expose field as javascript-property.");
+				}
 				sb.append(c.getColtype().ordinal());
-				if (c.getColtype() == ColType.ONE_TO_MANY || c.getColtype() == ColType.REQUIRED_MANY_TO_ONE || c.getColtype() == ColType.MANY_TO_MANY_NON_OWNER
+				if (c.getColtype() == ColType.ONE_TO_MANY || c.getColtype() == ColType.REQUIRED_MANY_TO_ONE
+						|| c.getColtype() == ColType.MANY_TO_MANY_NON_OWNER
 						|| c.getColtype() == ColType.MANY_TO_MANY_OWNER) {
 					sb.append(",type:'");
 					sb.append(c.getType().getSimpleName());
