@@ -48,7 +48,7 @@ import de.e_nexus.web.jpa.js.mod.GetRequestType;
 @WebServlet(urlPatterns = { "/jms/*" })
 public class JSMapperServlet extends HttpServlet {
 	/**
-	 * Logger for the the servlet.
+	 * The logger for the the servlet.
 	 */
 	private static final Logger LOG = Logger.getLogger(JSMapperServlet.class.getCanonicalName());
 
