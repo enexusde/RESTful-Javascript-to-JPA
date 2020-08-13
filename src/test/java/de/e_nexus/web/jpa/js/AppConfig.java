@@ -34,6 +34,8 @@ import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
 @Configuration
 @EnableTransactionManagement
@@ -44,7 +46,7 @@ public class AppConfig extends WebMvcConfigurerAdapter {
 	protected LocalContainerEntityManagerFactoryBean emf(DataSource dataSource) throws SQLException {
 		final LocalContainerEntityManagerFactoryBean emf = new LocalContainerEntityManagerFactoryBean();
 		emf.setPersistenceProviderClass(org.hibernate.jpa.HibernatePersistenceProvider.class);
-		emf.setPackagesToScan(Mother.class.getPackage().getName());
+		emf.setPackagesToScan(AppConfig.class.getPackage().getName());
 		emf.setDataSource(dataSource);
 		final StandardDialectResolver resolver = new StandardDialectResolver();
 		try {

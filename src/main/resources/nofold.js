@@ -278,22 +278,21 @@ function build(jsm, urlContextWithTailingSlash) {
 							}
 						}
 					}
-					for (var i = 0; i < fields.length; i++) {
-						var name = fields[i];
-						var value = data[name];
-						if (value === null) {
-							add(x, name + "-null", true);
-						}
-						add(x, name, value);
-					}
 					var body = null;
 					var hasBody = false;
 					for (var i = 0; i < fields.length; i++) {
-						var f = t[fields[i]];
+						var name = fields[i];
+						var value = data[name];
+						var f = t[name];
 						if (f.t == tm.REQUIRED_BODY_DATA || f.t == tm.OPTIONAL_BODY_DATA) {
 							hasBody = true;
 							var d = data[fields[i]];
 							body = new Int8Array(d);
+						} else {
+							if (value === null) {
+								add(x, name + "-null", true);
+							}
+							add(x, name, value);
 						}
 					}
 					if (hasBody) {
