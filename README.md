@@ -1,3 +1,5 @@
+![Java CI with Maven](https://github.com/enexusde/RESTful-Javascript-to-JPA/workflows/Java%20CI%20with%20Maven/badge.svg)
+
 # RESTful-Javascript-to-JPA
 Do you ever like to work with the Database in Javascript? Here is a Library that supports a very easy-to-use implementation.
 
