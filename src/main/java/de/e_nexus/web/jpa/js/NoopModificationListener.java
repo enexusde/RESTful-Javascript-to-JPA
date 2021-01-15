@@ -23,7 +23,7 @@ import de.e_nexus.web.jpa.js.mod.DBModelColumn;
 import de.e_nexus.web.jpa.js.mod.DBModelTable;
 
 @Named
-public class NoopModificationListener implements JavaScriptModificationListener<Object, Object> {
+public class NoopModificationListener implements JSONJavaScriptModificationListener<Object, Object> {
 
 	@Override
 	public void beforePersist(DBModelTable table, DBModelColumn column, Object entity, Object fieldType,

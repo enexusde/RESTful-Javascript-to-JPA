@@ -60,7 +60,7 @@ public class DefaultJSMapperController implements JSMapperController {
 	private static final int INDEX_ERROR_VALUE = -1;
 
 	@Inject
-	private final JavaScriptModificationListener<?, ?>[] listeners = null;
+	private final JSONJavaScriptModificationListener<?, ?>[] listeners = null;
 
 	@Inject
 	private final DBColumnSimpleValueMasquerade[] masquerades = {};
@@ -175,8 +175,8 @@ public class DefaultJSMapperController implements JSMapperController {
 
 		Object id = indexer.findId(Integer.parseInt(f.getName()), entityTable, idCol);
 		Object entity = entityManager.find(entityTable.getEntityClass(), id);
-		Set<JavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, entity, null);
-		for (JavaScriptModificationListener l : listeners) {
+		Set<JSONJavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, entity, null);
+		for (JSONJavaScriptModificationListener l : listeners) {
 			try {
 				l.beforePersist(entityTable, null, entity, null, DatabaseChangeType.REMOVE);
 			} catch (Exception e) {
@@ -184,7 +184,7 @@ public class DefaultJSMapperController implements JSMapperController {
 			}
 		}
 		entityManager.remove(entity);
-		for (JavaScriptModificationListener l : listeners) {
+		for (JSONJavaScriptModificationListener l : listeners) {
 			try {
 				l.afterPersist(entityTable, null, entity, null, DatabaseChangeType.REMOVE);
 			} catch (Exception e) {
@@ -215,8 +215,8 @@ public class DefaultJSMapperController implements JSMapperController {
 				else
 					newValue = entityManager.find(c.getType(), newId);
 				bwi.setPropertyValue(propertyName, newValue);
-				Set<JavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, entity, newValue);
-				for (JavaScriptModificationListener l : listeners) {
+				Set<JSONJavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, entity, newValue);
+				for (JSONJavaScriptModificationListener l : listeners) {
 					try {
 						l.beforePersist(table, c, entity, newValue, DatabaseChangeType.RELATION);
 					} catch (Exception e) {
@@ -224,7 +224,7 @@ public class DefaultJSMapperController implements JSMapperController {
 					}
 				}
 				entityManager.persist(entity);
-				for (JavaScriptModificationListener l : listeners) {
+				for (JSONJavaScriptModificationListener l : listeners) {
 					try {
 						l.afterPersist(table, c, entity, newValue, DatabaseChangeType.RELATION);
 					} catch (Exception e) {
@@ -287,8 +287,8 @@ public class DefaultJSMapperController implements JSMapperController {
 		if (collection instanceof Set) {
 			Set<Object> set = (Set<Object>) collection;
 			set.add(nonOwnerEntity);
-			Set<JavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, ownerEntity, nonOwnerEntity);
-			for (JavaScriptModificationListener l : listeners) {
+			Set<JSONJavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, ownerEntity, nonOwnerEntity);
+			for (JSONJavaScriptModificationListener l : listeners) {
 				try {
 					l.beforePersist(ownerMapping, ownerColumn, ownerEntity, nonOwnerEntity, DatabaseChangeType.MANY_TO_MANY_RELATION);
 				} catch (Exception e) {
@@ -296,7 +296,7 @@ public class DefaultJSMapperController implements JSMapperController {
 				}
 			}
 			entityManager.persist(ownerEntity);
-			for (JavaScriptModificationListener l : listeners) {
+			for (JSONJavaScriptModificationListener l : listeners) {
 				try {
 					l.afterPersist(ownerMapping, ownerColumn, ownerEntity, nonOwnerEntity, DatabaseChangeType.MANY_TO_MANY_RELATION);
 				} catch (Exception e) {
@@ -415,8 +415,8 @@ public class DefaultJSMapperController implements JSMapperController {
 				}
 
 			}
-			Set<JavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, entity, null);
-			for (JavaScriptModificationListener l : listeners) {
+			Set<JSONJavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, entity, null);
+			for (JSONJavaScriptModificationListener l : listeners) {
 				try {
 					l.beforePersist(t, null, entity, null, DatabaseChangeType.PLACE);
 				} catch (Exception e) {
@@ -424,7 +424,7 @@ public class DefaultJSMapperController implements JSMapperController {
 				}
 			}
 			entityManager.persist(entity);
-			for (JavaScriptModificationListener l : listeners) {
+			for (JSONJavaScriptModificationListener l : listeners) {
 				try {
 					l.afterPersist(t, null, entity, null, DatabaseChangeType.PLACE);
 				} catch (Exception e) {
@@ -660,8 +660,8 @@ public class DefaultJSMapperController implements JSMapperController {
 			bwi.setPropertyValue(c.getName(), new String(newURIEncodedValue));
 			break;
 		}
-		Set<JavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, entity, genuineValue);
-		for (JavaScriptModificationListener l : listeners) {
+		Set<JSONJavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, entity, genuineValue);
+		for (JSONJavaScriptModificationListener l : listeners) {
 			try {
 				l.beforePersist(t, c, entity, genuineValue, DatabaseChangeType.PROPERTY_NOT_RELATION);
 			} catch (Exception e) {
@@ -669,7 +669,7 @@ public class DefaultJSMapperController implements JSMapperController {
 			}
 		}
 		entityManager.persist(entity);
-		for (JavaScriptModificationListener l : listeners) {
+		for (JSONJavaScriptModificationListener l : listeners) {
 			try {
 				l.afterPersist(t, c, entity, genuineValue, DatabaseChangeType.PROPERTY_NOT_RELATION);
 			} catch (Exception e) {
