@@ -292,9 +292,10 @@ function build(jsm, urlContextWithTailingSlash) {
 								var fr = new FileReader();
 								fr.onload = function (res){
 									var newData = Object.assign({},data,{});
-									newData[fields[i]] = newInt8Array(res.target.result);
+									newData[fields[i]] = new Int8Array(res.target.result);
 									self(newData, cb);
 								}
+								fr.readAsArrayBuffer(d);
 								return;
 							} else if (d instanceof Int8Array) {
 								body = d;
