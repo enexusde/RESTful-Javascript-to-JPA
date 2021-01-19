@@ -256,6 +256,7 @@ function build(jsm, urlContextWithTailingSlash) {
 			enumerable : true,
 			configurable : false,
 			get : function(e) {
+				var self = this;
 				var size = sizeOf(key);
 				var ob = new Array(size);
 				function push(data, cb) {
@@ -287,7 +288,19 @@ function build(jsm, urlContextWithTailingSlash) {
 						if (f.t == tm.REQUIRED_BODY_DATA || f.t == tm.OPTIONAL_BODY_DATA) {
 							hasBody = true;
 							var d = data[fields[i]];
-							body = new Int8Array(d);
+							if (d instanceof File) {
+								var fr = new FileReader();
+								fr.onload = function (res){
+									var newData = Object.assign({},data,{});
+									newData[fields[i]] = newInt8Array(res.target.result);
+									self(newData, cb);
+								}
+								return;
+							} else if (d instanceof Int8Array) {
+								body = d;
+							} else {
+								body = new Int8Array(d);
+							}
 						} else {
 							if (value === null) {
 								add(x, name + "-null", true);
