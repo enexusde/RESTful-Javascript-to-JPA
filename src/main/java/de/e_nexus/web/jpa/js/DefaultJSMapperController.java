@@ -238,16 +238,30 @@ public class DefaultJSMapperController implements JSMapperController {
 
 	@Override
 	@Transactional
-	public String getIndexById(String entity, int parseInt) {
+	public String getIndexJSONById(String entity, int id) {
 		DBModelTable t = model.getEntity(entity);
 		DBModelColumn idc = model.getIdColumn(t);
-		Object pk = parseToFieldNumberType("" + parseInt, idc.getType());
+		Object pk = parseToFieldNumberType("" + id, idc.getType());
 		Object find = entityManager.find(t.getEntityClass(), pk);
 		Number index = getIndex(find);
 		if (index.intValue() == INDEX_ERROR_VALUE) {
 			return "{\"error\":\"No such pk for " + entity + "!\"}";
 		}
 		return "{\"index\":" + index + "}";
+	}
+
+	@Override
+	@Transactional
+	public int getIndexById(String entity, int id) {
+		DBModelTable t = model.getEntity(entity);
+		DBModelColumn idc = model.getIdColumn(t);
+		Object pk = parseToFieldNumberType("" + id, idc.getType());
+		Object find = entityManager.find(t.getEntityClass(), pk);
+		Number index = getIndex(find);
+		if (index.intValue() == INDEX_ERROR_VALUE) {
+			return -1_000;
+		}
+		return index.intValue();
 	}
 
 	@Override
@@ -496,10 +510,9 @@ public class DefaultJSMapperController implements JSMapperController {
 					}
 				}
 
-				String idQuery = "SELECT r." + foreignIdCol.getName() + " FROM " + ownerTable.getEntityClass().getCanonicalName() + " o RIGHT JOIN o."
-						+ c.getName() + " r WHERE o." + ownerIdCol.getName() + "=:oid";
-				for (Object id : entityManager.createQuery(idQuery, foreignIdCol.getType()).setParameter("oid", bwi.getPropertyValue(ownerIdCol.getName()))
-						.getResultList()) {
+				String idQuery = "SELECT r." + foreignIdCol.getName() + " FROM " + ownerTable.getEntityClass().getCanonicalName() + " o RIGHT JOIN o." + c.getName() + " r WHERE o."
+						+ ownerIdCol.getName() + "=:oid";
+				for (Object id : entityManager.createQuery(idQuery, foreignIdCol.getType()).setParameter("oid", bwi.getPropertyValue(ownerIdCol.getName())).getResultList()) {
 					if (!first) {
 						sb.append(",");
 					}

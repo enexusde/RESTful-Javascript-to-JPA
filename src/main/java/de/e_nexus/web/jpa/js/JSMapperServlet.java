@@ -74,8 +74,7 @@ public class JSMapperServlet extends HttpServlet {
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
-		app = (AbstractApplicationContext) config.getServletContext()
-				.getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
+		app = (AbstractApplicationContext) config.getServletContext().getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
 		if (app == null) {
 			throw new RuntimeException("App not loaded!");
 		}
@@ -102,9 +101,10 @@ public class JSMapperServlet extends HttpServlet {
 		}
 		String result = "";
 		try {
-			Number index = getController().put(filename, headers, copyToByteArray);
+			Number id = getController().put(filename, headers, copyToByteArray);
+			int index = getController().getIndexById(filename, id.intValue());
 			resp.setContentType(JSON);
-			String val = "{\"id\":" + index + "}";
+			String val = "{\"id\":" + id + ", \"no\":\"" + index + "\"}";
 			resp.setContentLength(val.length());
 			resp.getOutputStream().write(val.getBytes());
 		} catch (Exception e) {
@@ -131,8 +131,7 @@ public class JSMapperServlet extends HttpServlet {
 			} catch (JpaSystemException e) {
 				Throwable t = e;
 				while (t != null) {
-					if (t.getClass().getCanonicalName()
-							.equals("org.hibernate.exception.ConstraintViolationException")) {
+					if (t.getClass().getCanonicalName().equals("org.hibernate.exception.ConstraintViolationException")) {
 						resp.sendError(428);
 					}
 					t = t.getCause();
@@ -180,7 +179,7 @@ public class JSMapperServlet extends HttpServlet {
 		switch (calculateGetRequestType) {
 		case INDEX_OF_ID: {
 			String entity = f.getName();
-			String json = getController().getIndexById(entity, Integer.parseInt(req.getParameter("id")));
+			String json = getController().getIndexJSONById(entity, Integer.parseInt(req.getParameter("id")));
 			resp.setContentLength(json.length());
 			resp.setContentType(JSON);
 			resp.getOutputStream().write(json.getBytes());

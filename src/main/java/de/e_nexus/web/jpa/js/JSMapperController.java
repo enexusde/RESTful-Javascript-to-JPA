@@ -40,7 +40,17 @@ public interface JSMapperController {
 
 	void updateRelation(File f, Integer newIndex, URL url);
 
-	String getIndexById(String entity, int parseInt);
+	String getIndexJSONById(String entity, int id);
+
+	/**
+	 * Returns the index of the id. If tuple does not exists this returns
+	 * <code>-1000</code>
+	 * 
+	 * @param entity The entity to look for, never <code>null</code>.
+	 * @param id     The primary key to look for.
+	 * @return The index or -1000.
+	 */
+	int getIndexById(String entity, int id);
 
 	void addN2M(File f, String data);
 }
