@@ -77,6 +77,19 @@ public class DefaultJSMapperController implements JSMapperController {
 	@Inject
 	private final DBModelHolder model = null;
 
+	public Number getId(Object entity) {
+		for (DBModelTable t : model.getModel()) {
+			if (t.getEntityClass().isInstance(entity)) {
+				DBModelColumn c = model.getIdColumn(t);
+				BeanWrapperImpl bwi = new BeanWrapperImpl(entity);
+				Object o = bwi.getPropertyValue(c.getName());
+				if (o instanceof Number)
+					return (Number) o;
+			}
+		}
+		return null;
+	}
+
 	public Number getIndex(Object val) {
 		for (DBModelTable t : model.getModel()) {
 			if (t.getEntityClass().isInstance(val)) {
@@ -109,7 +122,7 @@ public class DefaultJSMapperController implements JSMapperController {
 	public Number put(String entityName, Map<String, String> headers, byte[] ba) {
 		DBModelTable table = model.getEntity(entityName);
 		Object put = put(table, headers, ba);
-		return getIndex(put);
+		return getId(put);
 	}
 
 	@Override
