@@ -75,7 +75,8 @@ public class JSMapperServlet extends HttpServletBean {
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
-		app = (AbstractApplicationContext) config.getServletContext().getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
+		app = (AbstractApplicationContext) config.getServletContext()
+				.getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
 		if (app == null) {
 			throw new RuntimeException("App not loaded!");
 		}
@@ -130,9 +131,11 @@ public class JSMapperServlet extends HttpServletBean {
 			try {
 				getController().deleteEntity(f);
 			} catch (JpaSystemException e) {
+				LOG.log(Level.WARNING, e.getMessage(), e);
 				Throwable t = e;
 				while (t != null) {
-					if (t.getClass().getCanonicalName().equals("org.hibernate.exception.ConstraintViolationException")) {
+					if (t.getClass().getCanonicalName()
+							.equals("org.hibernate.exception.ConstraintViolationException")) {
 						resp.sendError(428);
 					}
 					t = t.getCause();
