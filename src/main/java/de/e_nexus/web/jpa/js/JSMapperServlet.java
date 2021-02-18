@@ -40,13 +40,14 @@ import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.servlet.HttpServletBean;
 
 import de.e_nexus.web.jpa.js.mod.DBModelHolder;
 import de.e_nexus.web.jpa.js.mod.DBModelTable;
 import de.e_nexus.web.jpa.js.mod.GetRequestType;
 
 @WebServlet(urlPatterns = { "/jms/*" })
-public class JSMapperServlet extends HttpServlet {
+public class JSMapperServlet extends HttpServletBean {
 	/**
 	 * The logger for the the servlet.
 	 */

@@ -31,8 +31,7 @@ public class IndexFacade {
 	 * @return The index of the entity, never <code>null</code>.
 	 */
 	public Number getIndexById(Object o, DBModelColumn c, DBModelTable t) {
-		Query query = entityManager.createQuery("SELECT e." + c.getName() + " FROM " + t.getName() + " e WHERE e."
-				+ c.getName() + " < " + o + " ORDER BY " + c.getName() + " DESC");
+		Query query = entityManager.createQuery("SELECT e." + c.getName() + " FROM " + t.getName() + " e WHERE e." + c.getName() + " < " + o + " ORDER BY " + c.getName() + " DESC");
 		return query.getResultList().size();
 	}
 
@@ -48,11 +47,10 @@ public class IndexFacade {
 
 	public Object findId(Class<?> entity, DBModelColumn idColumn, int index) {
 		try {
-			Query query = entityManager.createQuery(
-					"SELECT e." + idColumn.getName() + " FROM " + entity.getCanonicalName() + " e ORDER BY id ASC");
+			Query query = entityManager.createQuery("SELECT e." + idColumn.getName() + " FROM " + entity.getCanonicalName() + " e ORDER BY id ASC");
 			return query.getResultList().get(index);
 		} catch (RuntimeException e) {
-			throw new RuntimeException("Can not find index no. " + index + " of " + entity.getSimpleName(), e);
+			throw new RuntimeException(entity.getSimpleName() + " can not be found by #" + index + " (this is the index-number, not the primary-key)!", e);
 		}
 	}
 }

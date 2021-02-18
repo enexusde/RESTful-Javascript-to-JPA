@@ -20,6 +20,7 @@ package de.e_nexus.web.jpa.js.mod;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.sql.Blob;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.logging.Logger;
@@ -124,7 +125,7 @@ public class DBModelBuilder {
 				if (Timestamp.class == jt) {
 					return ColType.REQUIRED_TIMESTAMP;
 				}
-				if (byte[].class == jt || Byte[].class == jt) {
+				if (byte[].class == jt || Byte[].class == jt || Blob.class == jt) {
 					return ColType.REQUIRED_BODY_DATA;
 				}
 				LOG.severe("Type " + jt + " is not mapped!");

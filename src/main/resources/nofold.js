@@ -143,7 +143,7 @@ function build(jsm, urlContextWithTailingSlash) {
 			var name = names[i];
 			var virt = mod[name].t == tm.OPTIONAL_BODY_DATA || mod[name].t == tm.REQUIRED_BODY_DATA;
 			if (virt) {
-				function constructLazyVirtual(o, name, index) {
+				var constructLazyVirtual=function(o, name, index) {
 					p(o, name, {
 						enumerable : true,
 						configurable : true,
@@ -256,65 +256,67 @@ function build(jsm, urlContextWithTailingSlash) {
 			enumerable : true,
 			configurable : false,
 			get : function(e) {
-				var self = this;
 				var size = sizeOf(key);
 				var ob = new Array(size);
 				function push(data, cb) {
-					var val = null;
-					check(data);
-					var x = new r();
-					x.open('PUT', urlContextWithTailingSlash + key + '/', arguments.length > 1);
-					x.onreadystatechange = function() {
-						if (x.readyState == 4) {
-							var json = jp(x[rt]);
-							if (json.error) {
-								console.warn("Server error while adding a '" + key + "': " + json.error);
-								alert(json.error);
-							}
-							if (typeof json.id === 'number') {
-								val = json.id;
-								if (typeof cb === 'function') {
-									cb(json);
+					var pushInternal = function(data,cb){
+						var val = null;
+						check(data);
+						var x = new r();
+						x.open('PUT', urlContextWithTailingSlash + key + '/', arguments.length > 1);
+						x.onreadystatechange = function() {
+							if (x.readyState == 4) {
+								var json = jp(x[rt]);
+								if (json.error) {
+									console.warn("Server error while adding a '" + key + "': " + json.error);
+									alert(json.error);
+								}
+								if (typeof json.id === 'number') {
+									val = json.id;
+									if (typeof cb === 'function') {
+										cb(json);
+									}
 								}
 							}
 						}
-					}
-					var body = null;
-					var hasBody = false;
-					for (var i = 0; i < fields.length; i++) {
-						var name = fields[i];
-						var value = data[name];
-						var f = t[name];
-						if (f.t == tm.REQUIRED_BODY_DATA || f.t == tm.OPTIONAL_BODY_DATA) {
-							hasBody = true;
-							var d = data[fields[i]];
-							if (d instanceof File) {
-								var fr = new FileReader();
-								fr.onload = function (res){
-									var newData = Object.assign({},data,{});
-									newData[fields[i]] = new Int8Array(res.target.result);
-									self(newData, cb);
+						var body = null;
+						var hasBody = false;
+						for (var i = 0; i < fields.length; i++) {
+							var name = fields[i];
+							var value = data[name];
+							var f = t[name];
+							if (f.t == tm.REQUIRED_BODY_DATA || f.t == tm.OPTIONAL_BODY_DATA) {
+								hasBody = true;
+								var d = data[fields[i]];
+								if (d instanceof File) {
+									var fr = new FileReader();
+									fr.onload = function (res){
+										var newData = Object.assign({},data,{});
+										newData[fields[i]] = new Int8Array(res.target.result);
+										pushInternal(newData, cb);
+									}
+									fr.readAsArrayBuffer(d);
+									return;
+								} else if (d instanceof Int8Array) {
+									body = d;
+								} else {
+									body = new Int8Array(d);
 								}
-								fr.readAsArrayBuffer(d);
-								return;
-							} else if (d instanceof Int8Array) {
-								body = d;
 							} else {
-								body = new Int8Array(d);
+								if (value === null) {
+									add(x, name + "-null", true);
+								}
+								add(x, name, value);
 							}
-						} else {
-							if (value === null) {
-								add(x, name + "-null", true);
-							}
-							add(x, name, value);
 						}
+						if (hasBody) {
+							x.send(body);
+						} else {
+							x.send();
+						}
+						return val;
 					}
-					if (hasBody) {
-						x.send(body);
-					} else {
-						x.send();
-					}
-					return val;
+					return pushInternal(data, cb); 
 				}
 				p(ob, 'push', {
 					enumerable : false,

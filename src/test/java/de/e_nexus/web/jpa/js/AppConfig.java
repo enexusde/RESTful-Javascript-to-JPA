@@ -17,11 +17,14 @@
  */
 package de.e_nexus.web.jpa.js;
 
+import java.sql.DriverManager;
+import org.h2.jdbcx.JdbcConnectionPool;
 import java.sql.SQLException;
 
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
+import org.h2.jdbcx.JdbcConnectionPoolBackwardsCompat;
 import org.hibernate.cfg.Environment;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.dialect.internal.StandardDialectResolver;
@@ -70,9 +73,8 @@ public class AppConfig extends WebMvcConfigurerAdapter {
 	 */
 	@Bean
 	protected DataSource dataSource() {
-		final JndiDataSourceLookup dsLookup = new JndiDataSourceLookup();
-		dsLookup.setResourceRef(true);
-		return dsLookup.getDataSource("jdbc/database");
+
+		return JdbcConnectionPool.create("jdbc:h2:mem:", "sa", "");
 	}
 
 	/**
