@@ -45,8 +45,10 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
+import org.springframework.web.bind.annotation.SessionAttribute;
 
 import de.e_nexus.web.jpa.js.masker.DBColumnSimpleValueMasquerade;
+import de.e_nexus.web.jpa.js.mod.BlobHandler;
 import de.e_nexus.web.jpa.js.mod.ColType;
 import de.e_nexus.web.jpa.js.mod.DBModelColumn;
 import de.e_nexus.web.jpa.js.mod.DBModelHolder;
@@ -73,6 +75,9 @@ public class DefaultJSMapperController implements JSMapperController {
 
 	@Inject
 	private final StringSerializer serializer = null;
+
+	@Inject
+	private final BlobHandler blobHandler = null;
 
 	@Inject
 	private final DBModelHolder model = null;
@@ -106,7 +111,9 @@ public class DefaultJSMapperController implements JSMapperController {
 	@Transactional
 	@Override
 	public void doGetCount(DBModelTable dbModelTable, HttpServletResponse resp) throws IOException {
-		Number n = entityManager.createQuery("SELECT COUNT(id) FROM " + dbModelTable.getEntityClass().getCanonicalName(), Number.class).getSingleResult();
+		Number n = entityManager
+				.createQuery("SELECT COUNT(id) FROM " + dbModelTable.getEntityClass().getCanonicalName(), Number.class)
+				.getSingleResult();
 		StringBuilder sb = new StringBuilder();
 		sb.append("{\"count\":");
 		sb.append(n);
@@ -228,7 +235,8 @@ public class DefaultJSMapperController implements JSMapperController {
 				else
 					newValue = entityManager.find(c.getType(), newId);
 				bwi.setPropertyValue(propertyName, newValue);
-				Set<JSONJavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, entity, newValue);
+				Set<JSONJavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, entity,
+						newValue);
 				for (JSONJavaScriptModificationListener l : listeners) {
 					try {
 						l.beforePersist(table, c, entity, newValue, DatabaseChangeType.RELATION);
@@ -308,16 +316,19 @@ public class DefaultJSMapperController implements JSMapperController {
 		}
 	}
 
-	private void addN2M(DBModelTable ownerMapping, DBModelColumn ownerColumn, Object ownerEntity, Object nonOwnerEntity) {
+	private void addN2M(DBModelTable ownerMapping, DBModelColumn ownerColumn, Object ownerEntity,
+			Object nonOwnerEntity) {
 		BeanWrapperImpl bwi = new BeanWrapperImpl(ownerEntity);
 		Object collection = bwi.getPropertyValue(ownerColumn.getName());
 		if (collection instanceof Set) {
 			Set<Object> set = (Set<Object>) collection;
 			set.add(nonOwnerEntity);
-			Set<JSONJavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, ownerEntity, nonOwnerEntity);
+			Set<JSONJavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, ownerEntity,
+					nonOwnerEntity);
 			for (JSONJavaScriptModificationListener l : listeners) {
 				try {
-					l.beforePersist(ownerMapping, ownerColumn, ownerEntity, nonOwnerEntity, DatabaseChangeType.MANY_TO_MANY_RELATION);
+					l.beforePersist(ownerMapping, ownerColumn, ownerEntity, nonOwnerEntity,
+							DatabaseChangeType.MANY_TO_MANY_RELATION);
 				} catch (Exception e) {
 					LOG.log(Level.SEVERE, "Calling js-listener " + l, e);
 				}
@@ -325,7 +336,8 @@ public class DefaultJSMapperController implements JSMapperController {
 			entityManager.persist(ownerEntity);
 			for (JSONJavaScriptModificationListener l : listeners) {
 				try {
-					l.afterPersist(ownerMapping, ownerColumn, ownerEntity, nonOwnerEntity, DatabaseChangeType.MANY_TO_MANY_RELATION);
+					l.afterPersist(ownerMapping, ownerColumn, ownerEntity, nonOwnerEntity,
+							DatabaseChangeType.MANY_TO_MANY_RELATION);
 				} catch (Exception e) {
 					LOG.log(Level.SEVERE, "Calling js-listener " + l, e);
 				}
@@ -426,6 +438,11 @@ public class DefaultJSMapperController implements JSMapperController {
 				case OPTIONAL_BODY_DATA:
 					pd.getWriteMethod().invoke(entity, ba);
 					continue;
+				case REQUIRED_BODY_DATA_BLOB:
+				case OPTIONAL_BODY_DATA_BLOB:
+					
+					pd.getWriteMethod().invoke(entity, blobHandler.generateBlob(ba));
+					continue;
 				case OPTIONAL_BOOLEAN:
 				case OPTIONAL_NUMBER:
 				case OPTIONAL_STRING_OR_CHAR:
@@ -459,7 +476,8 @@ public class DefaultJSMapperController implements JSMapperController {
 				}
 			}
 			return entity;
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+				| InvocationTargetException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -523,9 +541,11 @@ public class DefaultJSMapperController implements JSMapperController {
 					}
 				}
 
-				String idQuery = "SELECT r." + foreignIdCol.getName() + " FROM " + ownerTable.getEntityClass().getCanonicalName() + " o RIGHT JOIN o." + c.getName() + " r WHERE o."
-						+ ownerIdCol.getName() + "=:oid";
-				for (Object id : entityManager.createQuery(idQuery, foreignIdCol.getType()).setParameter("oid", bwi.getPropertyValue(ownerIdCol.getName())).getResultList()) {
+				String idQuery = "SELECT r." + foreignIdCol.getName() + " FROM "
+						+ ownerTable.getEntityClass().getCanonicalName() + " o RIGHT JOIN o." + c.getName()
+						+ " r WHERE o." + ownerIdCol.getName() + "=:oid";
+				for (Object id : entityManager.createQuery(idQuery, foreignIdCol.getType())
+						.setParameter("oid", bwi.getPropertyValue(ownerIdCol.getName())).getResultList()) {
 					if (!first) {
 						sb.append(",");
 					}
@@ -675,7 +695,8 @@ public class DefaultJSMapperController implements JSMapperController {
 				break;
 			}
 		case REQUIRED_NUMBER:
-			bwi.setPropertyValue(c.getName(), genuineValue = parseToFieldNumberType(new String(newURIEncodedValue), c.getType()));
+			bwi.setPropertyValue(c.getName(),
+					genuineValue = parseToFieldNumberType(new String(newURIEncodedValue), c.getType()));
 			break;
 		case OPTIONAL_STRING_OR_CHAR:
 			if (newURIEncodedValue == null) {

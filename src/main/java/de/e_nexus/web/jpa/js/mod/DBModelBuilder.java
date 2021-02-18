@@ -68,7 +68,8 @@ public class DBModelBuilder {
 								if (anno instanceof ManyToMany) {
 									ManyToMany manyToMany = (ManyToMany) anno;
 									if (manyToMany.mappedBy() == null) {
-										throw new RuntimeException("Many-to-many annotation must have a mappedBy-value!");
+										throw new RuntimeException(
+												"Many-to-many annotation must have a mappedBy-value!");
 									}
 									oppositePropery = manyToMany.mappedBy();
 								}
@@ -94,8 +95,8 @@ public class DBModelBuilder {
 					if (String.class.isAssignableFrom(jt) || char.class == jt || Character.class == jt) {
 						return ColType.OPTIONAL_STRING_OR_CHAR;
 					}
-					if (Number.class.isAssignableFrom(jt) || jt == long.class || jt == byte.class || jt == int.class || jt == short.class || jt == float.class
-							|| jt == double.class) {
+					if (Number.class.isAssignableFrom(jt) || jt == long.class || jt == byte.class || jt == int.class
+							|| jt == short.class || jt == float.class || jt == double.class) {
 						return ColType.OPTIONAL_NUMBER;
 					}
 					if (Boolean.class == jt || boolean.class == jt) {
@@ -104,7 +105,9 @@ public class DBModelBuilder {
 					if (byte[].class == jt || Byte[].class == jt) {
 						return ColType.OPTIONAL_BODY_DATA;
 					}
-
+					if (jt == Blob.class) {
+						return ColType.OPTIONAL_BODY_DATA_BLOB;
+					}
 				}
 				if (sa.isId()) {
 					return ColType.ID;
@@ -115,8 +118,8 @@ public class DBModelBuilder {
 				if (String.class.isAssignableFrom(jt) || char.class == jt || Character.class == jt) {
 					return ColType.REQUIRED_STRING_OR_CHAR;
 				}
-				if (Number.class.isAssignableFrom(jt) || jt == long.class || jt == byte.class || jt == int.class || jt == short.class || jt == float.class
-						|| jt == double.class) {
+				if (Number.class.isAssignableFrom(jt) || jt == long.class || jt == byte.class || jt == int.class
+						|| jt == short.class || jt == float.class || jt == double.class) {
 					return ColType.REQUIRED_NUMBER;
 				}
 				if (Boolean.class == jt || boolean.class == jt) {
@@ -125,8 +128,11 @@ public class DBModelBuilder {
 				if (Timestamp.class == jt) {
 					return ColType.REQUIRED_TIMESTAMP;
 				}
-				if (byte[].class == jt || Byte[].class == jt || Blob.class == jt) {
+				if (byte[].class == jt || Byte[].class == jt) {
 					return ColType.REQUIRED_BODY_DATA;
+				}
+				if (Blob.class == jt) {
+					return ColType.REQUIRED_BODY_DATA_BLOB;
 				}
 				LOG.severe("Type " + jt + " is not mapped!");
 			}

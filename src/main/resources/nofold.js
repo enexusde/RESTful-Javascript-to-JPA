@@ -285,7 +285,7 @@ function build(jsm, urlContextWithTailingSlash) {
 							var name = fields[i];
 							var value = data[name];
 							var f = t[name];
-							if (f.t == tm.REQUIRED_BODY_DATA || f.t == tm.OPTIONAL_BODY_DATA) {
+							if (f.t == tm.REQUIRED_BODY_DATA || f.t == tm.OPTIONAL_BODY_DATA||f.t == tm.REQUIRED_BODY_DATA_BLOB || f.t == tm.OPTIONAL_BODY_DATA_BLOB) {
 								hasBody = true;
 								var d = data[fields[i]];
 								if (d instanceof File) {

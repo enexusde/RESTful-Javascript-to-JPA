@@ -191,10 +191,12 @@ public class DefaultJSMapper implements JSMapperHandler {
 				case REQUIRED_MANY_TO_ONE:
 					return PushRequestType.UPDATE_RELATION;
 				case OPTIONAL_BODY_DATA:
+				case OPTIONAL_BODY_DATA_BLOB:
 				case OPTIONAL_BOOLEAN:
 				case OPTIONAL_NUMBER:
 				case OPTIONAL_STRING_OR_CHAR:
 				case REQUIRED_BODY_DATA:
+				case REQUIRED_BODY_DATA_BLOB:
 				case REQUIRED_BOOLEAN:
 				case REQUIRED_NUMBER:
 				case REQUIRED_STRING_OR_CHAR:
