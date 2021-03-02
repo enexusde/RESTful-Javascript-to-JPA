@@ -141,7 +141,7 @@ function build(jsm, urlContextWithTailingSlash) {
 		names = Object.keys(mod);
 		for (var i = 0; i < names.length; i++) {
 			var name = names[i];
-			var virt = mod[name].t == tm.OPTIONAL_BODY_DATA || mod[name].t == tm.REQUIRED_BODY_DATA;
+			var virt = mod[name].t == tm.OPTIONAL_BODY_DATA || mod[name].t == tm.REQUIRED_BODY_DATA || mod[name].t == tm.OPTIONAL_BODY_DATA_BLOB || mod[name].t == tm.REQUIRED_BODY_DATA_BLOB;
 			if (virt) {
 				var constructLazyVirtual=function(o, name, index) {
 					p(o, name, {
@@ -209,11 +209,11 @@ function build(jsm, urlContextWithTailingSlash) {
 			for (var m = 0; m < fields.length; m++) {
 				var c = t[fields[m]];
 				var cn = fields[m];
-				if (c.t == tm.OPTIONAL_NUMBER || c.t == tm.OPTIONAL_BOOLEAN || c.t == tm.OPTIONAL_STRING_OR_CHAR || c.t == tm.OPTIONAL_BODY_DATA
+				if (c.t == tm.OPTIONAL_NUMBER || c.t == tm.OPTIONAL_BOOLEAN || c.t == tm.OPTIONAL_STRING_OR_CHAR || c.t == tm.OPTIONAL_BODY_DATA || c.t == tm.OPTIONAL_BODY_DATA_BLOB
 						|| c.t == tm.OPTIONAL_MANY_TO_ONE) {
 					optional.push(cn);
 				}
-				if (c.t == tm.REQUIRED_NUMBER || c.t == tm.REQUIRED_BOOLEAN || c.t == tm.REQUIRED_STRING_OR_CHAR || c.t == tm.REQUIRED_BODY_DATA
+				if (c.t == tm.REQUIRED_NUMBER || c.t == tm.REQUIRED_BOOLEAN || c.t == tm.REQUIRED_STRING_OR_CHAR || c.t == tm.REQUIRED_BODY_DATA || c.t == tm.REQUIRED_BODY_DATA_BLOB
 						|| c.t == tm.REQUIRED_MANY_TO_ONE) {
 					required.push(cn);
 				}

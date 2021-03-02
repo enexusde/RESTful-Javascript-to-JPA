@@ -13,7 +13,7 @@
 	</properties>
 	<groupId>com.sotacms</groupId>
 	<artifactId>restfuljs2jpa</artifactId>
-	<version>1.0.12</version>
+	<version>1.0.13</version>
 	<packaging>jar</packaging>
 	<dependencies>
 		<!-- https://mvnrepository.com/artifact/org.apache.maven/maven-embedder -->
