@@ -27,3 +27,30 @@ for(var i =0; i < db.User.length;i++){
   }
 }
 ```
+
+# Integration
+
+Add this servlet to `web.xml`:
+```xml
+  <servlet>
+		<servlet-name>ReSTful-js2jpa-Servlet</servlet-name>
+		<servlet-class>de.e_nexus.web.jpa.js.JSMapperServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>ReSTful-js2jpa-Servlet</servlet-name>
+		<url-pattern>/rest/*</url-pattern>
+	</servlet-mapping>
+```
+
+Add this dependency to `pom.xml` (unfortunately currently not served by mvncentral)
+```
+		<dependency>
+			<groupId>com.sotacms</groupId>
+			<artifactId>restfuljs2jpa</artifactId>
+			<version>1.0.13</version>
+		</dependency>
+```
+And this to the HTML:
+```
+<script type="text/javascript" src="/rest/jsm.js"></script>
+```
