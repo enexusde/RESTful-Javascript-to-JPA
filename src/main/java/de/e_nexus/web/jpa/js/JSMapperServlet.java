@@ -83,19 +83,19 @@ public class JSMapperServlet extends HttpServletBean {
 	}
 
 	@Override
-	protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		StringBuffer urls = req.getRequestURL();
+	protected void doPut(HttpServletRequest request, HttpServletResponse resp) throws ServletException, IOException {
+		StringBuffer urls = request.getRequestURL();
 		URL url = new URL(urls.toString());
 		File f = new File(url.getFile());
 		String filename = f.getName();
-		ServletInputStream inputStream = req.getInputStream();
+		ServletInputStream inputStream = request.getInputStream();
 		byte[] copyToByteArray = StreamUtils.copyToByteArray(inputStream);
 		Map<String, String> headers = new LinkedHashMap<String, String>(0);
-		Enumeration<String> headerNames = req.getHeaderNames();
+		Enumeration<String> headerNames = request.getHeaderNames();
 		while (headerNames.hasMoreElements()) {
 			String n = (String) headerNames.nextElement();
-			String v = req.getHeader(n);
-			String nheader = req.getHeader(n + "-null");
+			String v = request.getHeader(n);
+			String nheader = request.getHeader(n + "-null");
 			if (nheader != null) {
 				v = null;
 			}
@@ -103,7 +103,7 @@ public class JSMapperServlet extends HttpServletBean {
 		}
 		String result = "";
 		try {
-			Number id = getController().put(filename, headers, copyToByteArray);
+			Number id = getController().put(filename, headers, copyToByteArray, request);
 			int index = getController().getIndexById(filename, id.intValue());
 			resp.setContentType(JSON);
 			String val = "{\"id\":" + id + ", \"no\":\"" + index + "\"}";
@@ -129,7 +129,7 @@ public class JSMapperServlet extends HttpServletBean {
 		switch (bean.calculateDeleteRequestType(f, req, url)) {
 		case DELETE_ENTITY:
 			try {
-				getController().deleteEntity(f);
+				getController().deleteEntity(f,req);
 			} catch (JpaSystemException e) {
 				LOG.log(Level.WARNING, e.getMessage(), e);
 				Throwable t = e;
@@ -148,24 +148,24 @@ public class JSMapperServlet extends HttpServletBean {
 	}
 
 	@Override
-	protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		StringBuffer urls = req.getRequestURL();
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+		StringBuffer urls = request.getRequestURL();
 		URL url = new URL(urls.toString());
 		File f = new File(url.getFile());
-		switch (getHandler().calculatePushRequestType(f, req, url)) {
+		switch (getHandler().calculatePushRequestType(f, request, url)) {
 		case UPDATE_FIELD:
-			getController().updateSimpleFieldValue(f, req, url);
+			getController().updateSimpleFieldValue(f, request, url);
 			break;
 		case UPDATE_RELATION:
-			String copyToString = StreamUtils.copyToString(req.getInputStream(), UTF8);
+			String copyToString = StreamUtils.copyToString(request.getInputStream(), UTF8);
 			Integer newIndex = null;
 			if (copyToString.length() > 0)
 				newIndex = Integer.parseInt(copyToString);
-			getController().updateRelation(f, newIndex, url);
+			getController().updateRelation(f, newIndex, url, request);
 			break;
 		case ADD_N2M:
-			String data = StreamUtils.copyToString(req.getInputStream(), UTF8);
-			getController().addN2M(f, data);
+			String data = StreamUtils.copyToString(request.getInputStream(), UTF8);
+			getController().addN2M(f, data, request);
 		default:
 			break;
 		}

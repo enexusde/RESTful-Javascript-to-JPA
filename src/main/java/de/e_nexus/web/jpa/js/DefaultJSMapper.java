@@ -25,7 +25,6 @@ import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.persistence.EntityManager;
@@ -49,10 +48,6 @@ import de.e_nexus.web.jpa.js.mod.PushRequestType;
 @Named
 public class DefaultJSMapper implements JSMapperHandler {
 
-	@PostConstruct
-	public void info() {
-		LOG.info("-- Constructed JS Mapper for ReSTful javascript to JPA3 --");
-	}
 
 	private static final String JS_CODE;
 	static {
@@ -103,6 +98,9 @@ public class DefaultJSMapper implements JSMapperHandler {
 			sb.append(":{");
 			boolean firstCol = true;
 			for (DBModelColumn c : t) {
+				if (c.getColtype() == ColType.VERSION) {
+					continue;
+				}
 				if (firstCol) {
 					firstCol = false;
 				} else {

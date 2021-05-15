@@ -258,12 +258,16 @@ function build(jsm, urlContextWithTailingSlash) {
 			get : function(e) {
 				var size = sizeOf(key);
 				var ob = new Array(size);
-				function push(data, cb) {
-					var pushInternal = function(data,cb){
+				function push(data, cb, additional) {
+					var pushInternal = function(data, cb, additional){
 						var val = null;
 						check(data);
 						var x = new r();
-						x.open('PUT', urlContextWithTailingSlash + key + '/', arguments.length > 1);
+						var xurl = urlContextWithTailingSlash + key + '/';
+						if(typeof additional != 'undefined') {
+							xurl = xurl + '?' + additional;
+						}
+						x.open('PUT', xurl, arguments.length > 1);
 						x.onreadystatechange = function() {
 							if (x.readyState == 4) {
 								var json = jp(x[rt]);
@@ -316,7 +320,7 @@ function build(jsm, urlContextWithTailingSlash) {
 						}
 						return val;
 					}
-					return pushInternal(data, cb); 
+					return pushInternal(data, cb, additional); 
 				}
 				p(ob, 'push', {
 					enumerable : false,

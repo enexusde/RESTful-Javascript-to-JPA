@@ -17,40 +17,23 @@
  */
 package de.e_nexus.web.jpa.js;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.util.Map;
-
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
+import de.e_nexus.web.jpa.js.mod.DBModelColumn;
 import de.e_nexus.web.jpa.js.mod.DBModelTable;
 
-public interface JSMapperController {
-	String getDetails(String entity, int index);
+public interface JSMapperPersistenceManager {
 
-	void updateSimpleFieldValue(File f, HttpServletRequest req, URL url);
+	void removeAction(DBModelTable entityTable, Object entity, HttpServletRequest request);
 
-	Number put(String entityName, Map<String, String> headers, byte[] ba, HttpServletRequest request);
+	void persistAction(DBModelTable table, Object entity, DBModelColumn c, Object newValue, HttpServletRequest request);
 
-	void doGetCount(DBModelTable dbModelTable, HttpServletResponse resp) throws IOException;
+	void persistN2MAction(DBModelTable ownerMapping, DBModelColumn ownerColumn, Object ownerEntity,
+			Object nonOwnerEntity, HttpServletRequest request);
 
-	void deleteEntity(File f, HttpServletRequest req);
+	void insertNewAction(DBModelTable t, Object entity, HttpServletRequest request);
 
-	void updateRelation(File f, Integer newIndex, URL url, HttpServletRequest request);
+	void persistSingleFieldAction(DBModelTable t, DBModelColumn c, Object entity, Object genuineValue,
+			HttpServletRequest request);
 
-	String getIndexJSONById(String entity, int id);
-
-	/**
-	 * Returns the index of the id. If tuple does not exists this returns
-	 * <code>-1000</code>
-	 * 
-	 * @param entity The entity to look for, never <code>null</code>.
-	 * @param id     The primary key to look for.
-	 * @return The index or -1000.
-	 */
-	int getIndexById(String entity, int id);
-
-	void addN2M(File f, String data, HttpServletRequest request);
 }
