@@ -47,7 +47,7 @@ Add this dependency to `pom.xml` (unfortunately currently not served by mvncentr
 		<dependency>
 			<groupId>com.sotacms</groupId>
 			<artifactId>restfuljs2jpa</artifactId>
-			<version>1.0.13</version>
+			<version>1.0.15</version>
 		</dependency>
 ```
 And this to the HTML:
