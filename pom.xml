@@ -66,6 +66,13 @@
 			<version>[2.9.10.1,)</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.openjdk.nashorn</groupId>
+			<artifactId>nashorn-core</artifactId>
+			<version>15.3</version>
+			<scope>test</scope>
+		</dependency>
+
 	</dependencies>
 	<build>
 		<defaultGoal>clean install</defaultGoal>
