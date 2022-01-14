@@ -24,4 +24,8 @@ public class MapperTest {
 		Object o = e.eval("k.Rabbit.length;");
 		assert o == (Integer)1;
 	}
+	public static void main(String[] args) throws ScriptException {
+		MapperTest t = new MapperTest();
+		t.testStart();
+	}
 }

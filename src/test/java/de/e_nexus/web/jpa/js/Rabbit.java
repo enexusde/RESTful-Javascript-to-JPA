@@ -10,14 +10,14 @@ import javax.persistence.Id;
 public class Rabbit {
 
 	private Blob photo;
-	private int id;
+	private RabbitPk id;
 
 	@Id
-	public int getId() {
+	public RabbitPk getId() {
 		return id;
 	}
 
-	public void setId(int id) {
+	public void setId(RabbitPk id) {
 		this.id = id;
 	}
 

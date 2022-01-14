@@ -23,7 +23,7 @@ public enum ColType {
 	OPTIONAL_STRING_OR_CHAR, //
 	OPTIONAL_BODY_DATA, //
 	OPTIONAL_BODY_DATA_BLOB, //
-	ID, //
+	ID, // composed or lonely
 	VERSION, //
 	REQUIRED_NUMBER, //
 	REQUIRED_BOOLEAN, //

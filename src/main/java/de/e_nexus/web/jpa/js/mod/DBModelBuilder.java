@@ -165,6 +165,8 @@ public class DBModelBuilder {
 				}
 				return owningSide ? ColType.MANY_TO_MANY_OWNER : ColType.MANY_TO_MANY_NON_OWNER;
 			}
+		} else if (at == PersistentAttributeType.EMBEDDED) {
+			return ColType.ID;
 		}
 		LOG.severe("Can not find type: " + at);
 		return null;
