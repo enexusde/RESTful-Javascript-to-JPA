@@ -17,13 +17,10 @@
  */
 package de.e_nexus.web.jpa.js;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -39,7 +36,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.springframework.context.support.AbstractApplicationContext;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.web.context.WebApplicationContext;
 
 import de.e_nexus.web.jpa.js.mod.DBModelHolder;
@@ -57,7 +54,7 @@ public class JSMapperServlet extends HttpServlet {
 
 	private static final long serialVersionUID = -7377744771353464633L;
 
-	private AbstractApplicationContext app;
+	private BeanFactory app;
 
 	public static final Charset UTF8;
 	private static final String JSON;
@@ -75,7 +72,7 @@ public class JSMapperServlet extends HttpServlet {
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
-		app = (AbstractApplicationContext) config.getServletContext()
+		app = (BeanFactory) config.getServletContext()
 				.getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
 		if (app == null) {
 			throw new RuntimeException("App not loaded!");
@@ -89,7 +86,7 @@ public class JSMapperServlet extends HttpServlet {
 		File f = new File(url.getFile());
 		String filename = f.getName();
 		ServletInputStream inputStream = request.getInputStream();
-		byte[] copyToByteArray = readBytes(inputStream);
+		byte[] copyToByteArray = CustomUtils.readBytes(inputStream);
 		Map<String, String> headers = new LinkedHashMap<String, String>(0);
 		Enumeration<String> headerNames = request.getHeaderNames();
 		while (headerNames.hasMoreElements()) {
@@ -158,14 +155,14 @@ public class JSMapperServlet extends HttpServlet {
 			getController().updateSimpleFieldValue(f, request, url);
 			break;
 		case UPDATE_RELATION:
-			String copyToString = new String(readBytes(request.getInputStream()), UTF8);
+			String copyToString = new String(CustomUtils.readBytes(request.getInputStream()), UTF8);
 			Integer newIndex = null;
 			if (copyToString.length() > 0)
 				newIndex = Integer.parseInt(copyToString);
 			getController().updateRelation(f, newIndex, url, request);
 			break;
 		case ADD_N2M:
-			String data = new String(readBytes(request.getInputStream()), UTF8);
+			String data = new String(CustomUtils.readBytes(request.getInputStream()), UTF8);
 			getController().addN2M(f, data, request);
 		default:
 			break;
@@ -233,16 +230,5 @@ public class JSMapperServlet extends HttpServlet {
 
 	private JSMapperController getController() {
 		return app.getBean(JSMapperController.class);
-	}
-
-	public static byte[] readBytes(InputStream is) throws IOException {
-
-		ByteArrayOutputStream result = new ByteArrayOutputStream();
-		byte[] buffer = new byte[1024];
-		int length;
-		while ((length = is.read(buffer)) != -1) {
-			result.write(buffer, 0, length);
-		}
-		return result.toByteArray();
 	}
 }

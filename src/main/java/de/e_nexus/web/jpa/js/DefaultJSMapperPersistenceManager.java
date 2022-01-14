@@ -49,7 +49,7 @@ public class DefaultJSMapperPersistenceManager implements JSMapperPersistenceMan
 		Map.Entry<ServletRequestEvent, RequestContextListener> state = null;
 		try {
 
-			Set<JSONJavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, entity, null);
+			Set<JSONJavaScriptModificationListener> listeners = CustomUtils.limit(this.listeners, entity, null);
 			for (JSONJavaScriptModificationListener l : listeners) {
 				try {
 					state = initState(request, state);
@@ -93,7 +93,7 @@ public class DefaultJSMapperPersistenceManager implements JSMapperPersistenceMan
 			HttpServletRequest request) {
 		Map.Entry<ServletRequestEvent, RequestContextListener> state = null;
 		try {
-			Set<JSONJavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, entity, newValue);
+			Set<JSONJavaScriptModificationListener> listeners = CustomUtils.limit(this.listeners, entity, newValue);
 			for (JSONJavaScriptModificationListener l : listeners) {
 				try {
 					state = initState(request, state);
@@ -119,7 +119,7 @@ public class DefaultJSMapperPersistenceManager implements JSMapperPersistenceMan
 			Object nonOwnerEntity, HttpServletRequest request) {
 		Map.Entry<ServletRequestEvent, RequestContextListener> state = null;
 		try {
-			Set<JSONJavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, ownerEntity,
+			Set<JSONJavaScriptModificationListener> listeners = CustomUtils.limit(this.listeners, ownerEntity,
 					nonOwnerEntity);
 			for (JSONJavaScriptModificationListener l : listeners) {
 				try {
@@ -147,7 +147,7 @@ public class DefaultJSMapperPersistenceManager implements JSMapperPersistenceMan
 	public void insertNewAction(DBModelTable t, Object entity, HttpServletRequest request) {
 		Map.Entry<ServletRequestEvent, RequestContextListener> state = null;
 		try {
-			Set<JSONJavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, entity, null);
+			Set<JSONJavaScriptModificationListener> listeners = CustomUtils.limit(this.listeners, entity, null);
 			for (JSONJavaScriptModificationListener l : listeners) {
 				try {
 					state = initState(request, state);
@@ -173,7 +173,7 @@ public class DefaultJSMapperPersistenceManager implements JSMapperPersistenceMan
 			HttpServletRequest request) {
 		Map.Entry<ServletRequestEvent, RequestContextListener> state = null;
 		try {
-			Set<JSONJavaScriptModificationListener> listeners = GenericUtils.limit(this.listeners, entity,
+			Set<JSONJavaScriptModificationListener> listeners = CustomUtils.limit(this.listeners, entity,
 					genuineValue);
 			for (JSONJavaScriptModificationListener l : listeners) {
 				try {

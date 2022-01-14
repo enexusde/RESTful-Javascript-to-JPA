@@ -28,10 +28,8 @@ import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
@@ -41,11 +39,9 @@ import javax.persistence.PersistenceContext;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.transaction.Transactional;
 
 import org.springframework.beans.BeanWrapperImpl;
-import javax.transaction.Transactional;
-import org.springframework.util.StreamUtils;
-import org.springframework.web.bind.annotation.SessionAttribute;
 
 import de.e_nexus.web.jpa.js.masker.DBColumnSimpleValueMasquerade;
 import de.e_nexus.web.jpa.js.mod.BlobHandler;
@@ -573,7 +569,7 @@ public class DefaultJSMapperController implements JSMapperController {
 			newURIEncodedValue = null;
 		} else {
 			try {
-				newURIEncodedValue = StreamUtils.copyToByteArray(request.getInputStream());
+				newURIEncodedValue = CustomUtils.readBytes(request.getInputStream());
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -643,7 +639,7 @@ public class DefaultJSMapperController implements JSMapperController {
 			bwi.setPropertyValue(c.getName(), new String(newURIEncodedValue));
 			break;
 		}
-		persistenceManager.persistSingleFieldAction(t, c, entity, genuineValue,request);
+		persistenceManager.persistSingleFieldAction(t, c, entity, genuineValue, request);
 	}
 
 }

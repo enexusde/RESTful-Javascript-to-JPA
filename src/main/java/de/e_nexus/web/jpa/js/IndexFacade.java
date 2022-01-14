@@ -5,7 +5,6 @@ import javax.inject.Named;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
-
 import javax.transaction.Transactional;
 
 import de.e_nexus.web.jpa.js.mod.DBModelColumn;
