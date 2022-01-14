@@ -17,10 +17,13 @@
  */
 package de.e_nexus.web.jpa.js;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -37,17 +40,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.context.support.AbstractApplicationContext;
-import org.springframework.orm.jpa.JpaSystemException;
-import org.springframework.util.StreamUtils;
 import org.springframework.web.context.WebApplicationContext;
-import org.springframework.web.servlet.HttpServletBean;
 
 import de.e_nexus.web.jpa.js.mod.DBModelHolder;
 import de.e_nexus.web.jpa.js.mod.DBModelTable;
 import de.e_nexus.web.jpa.js.mod.GetRequestType;
 
 @WebServlet(urlPatterns = { "/jms/*" })
-public class JSMapperServlet extends HttpServletBean {
+public class JSMapperServlet extends HttpServlet {
 	/**
 	 * The logger for the the servlet.
 	 */
@@ -89,7 +89,7 @@ public class JSMapperServlet extends HttpServletBean {
 		File f = new File(url.getFile());
 		String filename = f.getName();
 		ServletInputStream inputStream = request.getInputStream();
-		byte[] copyToByteArray = StreamUtils.copyToByteArray(inputStream);
+		byte[] copyToByteArray = readBytes(inputStream);
 		Map<String, String> headers = new LinkedHashMap<String, String>(0);
 		Enumeration<String> headerNames = request.getHeaderNames();
 		while (headerNames.hasMoreElements()) {
@@ -129,8 +129,8 @@ public class JSMapperServlet extends HttpServletBean {
 		switch (bean.calculateDeleteRequestType(f, req, url)) {
 		case DELETE_ENTITY:
 			try {
-				getController().deleteEntity(f,req);
-			} catch (JpaSystemException e) {
+				getController().deleteEntity(f, req);
+			} catch (RuntimeException e) {
 				LOG.log(Level.WARNING, e.getMessage(), e);
 				Throwable t = e;
 				while (t != null) {
@@ -148,7 +148,8 @@ public class JSMapperServlet extends HttpServletBean {
 	}
 
 	@Override
-	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+	protected void doPost(HttpServletRequest request, HttpServletResponse response)
+			throws ServletException, IOException {
 		StringBuffer urls = request.getRequestURL();
 		URL url = new URL(urls.toString());
 		File f = new File(url.getFile());
@@ -157,14 +158,14 @@ public class JSMapperServlet extends HttpServletBean {
 			getController().updateSimpleFieldValue(f, request, url);
 			break;
 		case UPDATE_RELATION:
-			String copyToString = StreamUtils.copyToString(request.getInputStream(), UTF8);
+			String copyToString = new String(readBytes(request.getInputStream()), UTF8);
 			Integer newIndex = null;
 			if (copyToString.length() > 0)
 				newIndex = Integer.parseInt(copyToString);
 			getController().updateRelation(f, newIndex, url, request);
 			break;
 		case ADD_N2M:
-			String data = StreamUtils.copyToString(request.getInputStream(), UTF8);
+			String data = new String(readBytes(request.getInputStream()), UTF8);
 			getController().addN2M(f, data, request);
 		default:
 			break;
@@ -232,5 +233,16 @@ public class JSMapperServlet extends HttpServletBean {
 
 	private JSMapperController getController() {
 		return app.getBean(JSMapperController.class);
+	}
+
+	public static byte[] readBytes(InputStream is) throws IOException {
+
+		ByteArrayOutputStream result = new ByteArrayOutputStream();
+		byte[] buffer = new byte[1024];
+		int length;
+		while ((length = is.read(buffer)) != -1) {
+			result.write(buffer, 0, length);
+		}
+		return result.toByteArray();
 	}
 }
