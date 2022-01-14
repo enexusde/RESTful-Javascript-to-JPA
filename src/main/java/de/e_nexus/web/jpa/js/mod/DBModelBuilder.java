@@ -28,6 +28,7 @@ import java.util.logging.Logger;
 import javax.persistence.EntityManager;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
+import javax.persistence.OneToOne;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.Attribute.PersistentAttributeType;
 import javax.persistence.metamodel.EntityType;
@@ -164,6 +165,24 @@ public class DBModelBuilder {
 					}
 				}
 				return owningSide ? ColType.MANY_TO_MANY_OWNER : ColType.MANY_TO_MANY_NON_OWNER;
+			}
+		} else if (at == PersistentAttributeType.ONE_TO_ONE) {
+			if (attribute instanceof SingularAttribute<?, ?>) {
+				SingularAttribute<?, ?> singular = (SingularAttribute<?, ?>) attribute;
+				boolean owningSide = false;
+				if (singular.getJavaMember() instanceof Method) {
+					Method method = (Method) singular.getJavaMember();
+					Annotation[] annotations = method.getAnnotations();
+					for (Annotation annotation : annotations) {
+						if (annotation instanceof OneToOne) {
+							OneToOne oneToOne = (OneToOne) annotation;
+							if (!"".equals(oneToOne.mappedBy())) {
+								owningSide = true;
+							}
+						}
+					}
+				}
+				return owningSide ? ColType.ONE_TO_ONE_OWNING_SIDE : ColType.ONE_TO_ONE_NON_OWNING_SIDE;
 			}
 		} else if (at == PersistentAttributeType.EMBEDDED) {
 			return ColType.ID;

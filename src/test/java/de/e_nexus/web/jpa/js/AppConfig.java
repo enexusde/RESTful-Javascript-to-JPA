@@ -73,7 +73,6 @@ public class AppConfig extends WebMvcConfigurerAdapter {
 	 */
 	@Bean
 	protected DataSource dataSource() {
-
 		return JdbcConnectionPool.create("jdbc:h2:mem:", "sa", "");
 	}
 
