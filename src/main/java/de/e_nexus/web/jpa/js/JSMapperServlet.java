@@ -58,11 +58,9 @@ public class JSMapperServlet extends HttpServlet {
 	private BeanFactory app;
 
 	public static final Charset UTF8;
-	private static final String JSON;
-	private static final String JAVASCRIPT;
+	private static final String JSON = "application/json;charset=" + UTF8NAME;
+	private static final String JAVASCRIPT = "application/javascript;charset=" + UTF8NAME;
 	static {
-		JSON = "application/json;charset=" + UTF8NAME;
-		JAVASCRIPT = "application/javascript;charset=" + UTF8NAME;
 		UTF8 = Charset.forName(UTF8NAME);
 	}
 
