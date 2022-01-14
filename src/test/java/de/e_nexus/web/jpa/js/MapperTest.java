@@ -1,12 +1,8 @@
 package de.e_nexus.web.jpa.js;
 
-import java.util.Enumeration;
-
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
 
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 

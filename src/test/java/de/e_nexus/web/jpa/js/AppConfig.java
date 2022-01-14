@@ -17,14 +17,12 @@
  */
 package de.e_nexus.web.jpa.js;
 
-import java.sql.DriverManager;
-import org.h2.jdbcx.JdbcConnectionPool;
 import java.sql.SQLException;
 
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
-import org.h2.jdbcx.JdbcConnectionPoolBackwardsCompat;
+import org.h2.jdbcx.JdbcConnectionPool;
 import org.hibernate.cfg.Environment;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.dialect.internal.StandardDialectResolver;
@@ -32,7 +30,6 @@ import org.hibernate.engine.jdbc.dialect.spi.DatabaseMetaDataDialectResolutionIn
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.jdbc.datasource.lookup.JndiDataSourceLookup;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
