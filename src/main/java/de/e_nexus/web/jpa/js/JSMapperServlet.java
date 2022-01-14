@@ -37,7 +37,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.web.context.WebApplicationContext;
 
 import de.e_nexus.web.jpa.js.mod.DBModelHolder;
 import de.e_nexus.web.jpa.js.mod.DBModelTable;
@@ -45,6 +44,8 @@ import de.e_nexus.web.jpa.js.mod.GetRequestType;
 
 @WebServlet(urlPatterns = { "/jms/*" })
 public class JSMapperServlet extends HttpServlet {
+	public static final String ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE = "org.springframework.web.context.WebApplicationContext.ROOT";
+
 	/**
 	 * The logger for the the servlet.
 	 */
@@ -72,8 +73,7 @@ public class JSMapperServlet extends HttpServlet {
 	@Override
 	public void init(ServletConfig config) throws ServletException {
 		super.init(config);
-		app = (BeanFactory) config.getServletContext()
-				.getAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
+		app = (BeanFactory) config.getServletContext().getAttribute(ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
 		if (app == null) {
 			throw new RuntimeException("App not loaded!");
 		}
