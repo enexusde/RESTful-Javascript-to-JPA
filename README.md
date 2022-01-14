@@ -6,13 +6,13 @@ Do you ever like to work with the Database in Javascript? Here is a Library that
 In example adding user Tom to the table user (id, username) you could simply call:
 
 ```javascript
-var db = build('rest/');
+var db = build(jsm, 'rest/');
 db.User.push({username:'Tom'});
 ```
 Reading all users works like this:
 
 ```javascript
-var db = build('rest/');
+var db = build(jsm, 'rest/');
 for(var i =0; i < db.User.length;i++){
   alert (db.User[i].username);
 }
@@ -20,7 +20,7 @@ for(var i =0; i < db.User.length;i++){
 
 And change the name of Tom to Marry is like this:
 ```javascript
-var db = build('rest/');
+var db = build(jsm, 'rest/');
 for(var i =0; i < db.User.length;i++){
   if (db.User[i].username == 'Tom') {
     db.User[i].username = 'Marry';

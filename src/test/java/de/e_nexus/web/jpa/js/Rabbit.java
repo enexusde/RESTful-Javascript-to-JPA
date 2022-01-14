@@ -11,6 +11,7 @@ public class Rabbit {
 
 	private Blob photo;
 	private RabbitPk id;
+	private java.sql.Date born;
 
 	@Id
 	public RabbitPk getId() {
@@ -28,5 +29,14 @@ public class Rabbit {
 
 	public void setPhoto(Blob photo) {
 		this.photo = photo;
+	}
+
+	@Column
+	public java.sql.Date getBorn() {
+		return born;
+	}
+
+	public void setBorn(java.sql.Date born) {
+		this.born = born;
 	}
 }

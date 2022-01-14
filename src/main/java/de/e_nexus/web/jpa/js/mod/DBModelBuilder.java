@@ -21,6 +21,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.sql.Blob;
+import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.logging.Logger;
@@ -109,6 +110,12 @@ public class DBModelBuilder {
 					if (jt == Blob.class) {
 						return ColType.OPTIONAL_BODY_DATA_BLOB;
 					}
+					if (Timestamp.class == jt) {
+						return ColType.OPTIONAL_TIMESTAMP;
+					}
+					if (Date.class == jt) {
+						return ColType.OPTIONAL_DATE;
+					}
 				}
 				if (sa.isId()) {
 					return ColType.ID;
@@ -128,6 +135,9 @@ public class DBModelBuilder {
 				}
 				if (Timestamp.class == jt) {
 					return ColType.REQUIRED_TIMESTAMP;
+				}
+				if (Date.class == jt) {
+					return ColType.REQUIRED_DATE;
 				}
 				if (byte[].class == jt || Byte[].class == jt) {
 					return ColType.REQUIRED_BODY_DATA;
