@@ -2,7 +2,7 @@ package de.e_nexus.web.jpa.js.mod;
 
 import java.sql.Blob;
 
-import org.springframework.transaction.annotation.Transactional;
+import javax.transaction.Transactional;
 
 public interface BlobHandler {
 

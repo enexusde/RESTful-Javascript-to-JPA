@@ -6,7 +6,7 @@ import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 
-import org.springframework.transaction.annotation.Transactional;
+import javax.transaction.Transactional;
 
 import de.e_nexus.web.jpa.js.mod.DBModelColumn;
 import de.e_nexus.web.jpa.js.mod.DBModelHolder;

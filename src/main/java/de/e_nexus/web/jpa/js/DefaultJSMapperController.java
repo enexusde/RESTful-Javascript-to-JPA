@@ -43,7 +43,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.BeanWrapperImpl;
-import org.springframework.transaction.annotation.Transactional;
+import javax.transaction.Transactional;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.bind.annotation.SessionAttribute;
 
