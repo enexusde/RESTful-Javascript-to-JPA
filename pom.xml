@@ -46,7 +46,6 @@
 			<version>[1.2,)</version>
 			<scope>provided</scope>
 		</dependency>
-
 		<!-- Test libraries -->
 		<dependency>
 			<groupId>org.springframework</groupId>

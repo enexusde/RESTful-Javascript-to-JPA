@@ -18,8 +18,9 @@ public class MapperTest {
 		e.eval(bean.getJavascriptCode());
 		e.eval("var k = build(jsm,'api');");
 		Object o = e.eval("k.Rabbit.length;");
-		assert o == (Integer)1;
+		assert o == (Integer) 1;
 	}
+
 	public static void main(String[] args) throws ScriptException {
 		MapperTest t = new MapperTest();
 		t.testStart();

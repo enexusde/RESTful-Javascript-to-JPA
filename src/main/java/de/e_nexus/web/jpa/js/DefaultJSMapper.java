@@ -85,7 +85,7 @@ public class DefaultJSMapper implements JSMapperHandler {
 			sb.append(":");
 			sb.append(Integer.toString(colType.ordinal()));
 		}
-		sb.append("};");
+		sb.append("};\n");
 		sb.append("var jsm= {");
 		first = true;
 		for (DBModelTable t : model.getModel()) {

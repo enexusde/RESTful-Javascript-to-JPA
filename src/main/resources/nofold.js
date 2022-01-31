@@ -14,6 +14,18 @@ function build(jsm, urlContextWithTailingSlash) {
 	var undef = function(o) {
 		return typeof o === 'undefined';
 	}
+	function addMessage(msg, data, t, ky) {
+		msg += tcheck(data[ky], t[ky].t == tm.REQUIRED_BOOLEAN, 'boolean', false, ky);
+		msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_BOOLEAN, 'boolean', true, ky);
+		msg += tcheck(data[ky], t[ky].t == tm.REQUIRED_NUMBER, 'number', false, ky);
+		msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_NUMBER, 'number', true, ky);
+		msg += tcheck(data[ky], t[ky].t == tm.REQUIRED_STRING_OR_CHAR, 'string', false, ky);
+		msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_STRING_OR_CHAR, 'string', true, ky);
+		msg += tcheck(data[ky], t[ky].t == tm.REQUIRED_BODY_DATA, 'object', false, ky);
+		msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_BODY_DATA, 'object', true, ky);
+		msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_MANY_TO_ONE, 'number', true, ky);
+		return msg;
+	}
 	function sizeOf(entity) {
 		var x = new r();
 		var l = -1;
@@ -103,15 +115,7 @@ function build(jsm, urlContextWithTailingSlash) {
 				set : function(e) {
 					var type = jsm[entity];
 					var prop = type[property];
-					var msg = '';
-					msg += tcheck(e, prop.t == tm.REQUIRED_STRING_OR_CHAR, 'string', false, property);
-					msg += tcheck(e, prop.t == tm.REQUIRED_BOOLEAN, 'boolean', false, property);
-					msg += tcheck(e, prop.t == tm.REQUIRED_NUMBER, 'number', false, property);
-					msg += tcheck(e, prop.t == tm.REQUIRED_BODY_DATA, 'object', false, property);
-					msg += tcheck(e, prop.t == tm.OPTIONAL_STRING_OR_CHAR, 'string', true, property);
-					msg += tcheck(e, prop.t == tm.OPTIONAL_BOOLEAN, 'boolean', true, property);
-					msg += tcheck(e, prop.t == tm.OPTIONAL_NUMBER, 'number', true, property);
-					msg += tcheck(e, prop.t == tm.OPTIONAL_BODY_DATA, 'object', true, property);
+					var msg = addMessage('', e, prop, property);
 					if (msg != '')
 						throw msg;
 					var x = new r();
@@ -225,15 +229,7 @@ function build(jsm, urlContextWithTailingSlash) {
 					msg += '\n  ' + ky + ' is unknown! ';
 					continue;
 				}
-				msg += tcheck(data[ky], t[ky].t == tm.REQUIRED_BOOLEAN, 'boolean', false, ky);
-				msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_BOOLEAN, 'boolean', true, ky);
-				msg += tcheck(data[ky], t[ky].t == tm.REQUIRED_NUMBER, 'number', false, ky);
-				msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_NUMBER, 'number', true, ky);
-				msg += tcheck(data[ky], t[ky].t == tm.REQUIRED_STRING_OR_CHAR, 'string', false, ky);
-				msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_STRING_OR_CHAR, 'string', true, ky);
-				msg += tcheck(data[ky], t[ky].t == tm.REQUIRED_BODY_DATA, 'object', false, ky);
-				msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_BODY_DATA, 'object', true, ky);
-				msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_MANY_TO_ONE, 'number', true, ky);
+				msg = addMessage(msg, data, t, ky);
 			}
 			for (var k = 0; k < required.length; k++) {
 				var ky = required[k];

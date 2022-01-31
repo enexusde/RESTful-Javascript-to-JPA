@@ -17,6 +17,11 @@
  */
 package de.e_nexus.web.jpa.js.mod;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 import javax.inject.Named;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -54,12 +59,13 @@ public class DefaultDBModelHolder implements DBModelHolder, SmartInitializingSin
 	}
 
 	@Override
-	public DBModelColumn getIdColumn(DBModelTable entityTable) {
+	public Set<DBModelColumn> getIdColumns(DBModelTable entityTable) {
+		Set<DBModelColumn> cols = new LinkedHashSet<DBModelColumn>();
 		for (DBModelColumn c : entityTable) {
-			if (c.getColtype() == ColType.ID) {
-				return c;
+			if (c.getColtype() == ColType.ID | c.getColtype() == ColType.ID_COMPOSED) {
+				cols.add(c);
 			}
 		}
-		return null;
+		return Collections.unmodifiableSet(cols);
 	}
 }

@@ -108,7 +108,7 @@ public class DefaultJSMapperController implements JSMapperController {
 	@Override
 	public void doGetCount(DBModelTable dbModelTable, HttpServletResponse resp) throws IOException {
 		Number n = entityManager
-				.createQuery("SELECT COUNT(id) FROM " + dbModelTable.getEntityClass().getCanonicalName(), Number.class)
+				.createQuery("SELECT COUNT(*) FROM " + dbModelTable.getEntityClass().getCanonicalName(), Number.class)
 				.getSingleResult();
 		StringBuilder sb = new StringBuilder();
 		sb.append("{\"count\":");

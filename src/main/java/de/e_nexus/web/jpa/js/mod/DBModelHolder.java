@@ -17,12 +17,14 @@
  */
 package de.e_nexus.web.jpa.js.mod;
 
+import java.util.Set;
+
 public interface DBModelHolder {
 
 	DBSchemaModel getModel();
 
 	DBModelTable getEntity(String entityName);
 
-	DBModelColumn getIdColumn(DBModelTable entityTable);
+	Set<DBModelColumn> getIdColumns(DBModelTable table);
 
 }

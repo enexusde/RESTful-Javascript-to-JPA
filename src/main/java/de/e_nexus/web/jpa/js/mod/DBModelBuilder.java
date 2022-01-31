@@ -17,6 +17,11 @@
  */
 package de.e_nexus.web.jpa.js.mod;
 
+import java.beans.BeanDescriptor;
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
@@ -24,8 +29,10 @@ import java.sql.Blob;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.Collection;
+import java.util.Enumeration;
 import java.util.logging.Logger;
 
+import javax.management.RuntimeErrorException;
 import javax.persistence.EntityManager;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
@@ -80,8 +87,25 @@ public class DBModelBuilder {
 						javaType = pluralPersistentAttribute.getElementType().getJavaType();
 					}
 				}
-				DBModelColumn c = new DBModelColumn(attribute.getName(), ct, javaType, oppositePropery);
-				t.add(c);
+				if (ct == ColType.ID_COMPOSED) {
+
+					BeanInfo info;
+					try {
+						info = Introspector.getBeanInfo(attribute.getJavaType());
+					} catch (IntrospectionException e) {
+						throw new RuntimeException(e);
+					}
+					for (PropertyDescriptor prop : info.getPropertyDescriptors()) {
+						if (prop.getReadMethod().getDeclaringClass() == attribute.getJavaType()) {
+							DBModelColumn c = new DBModelColumn(prop.getName(), ct, prop.getPropertyType(), null);
+							t.add(c);
+						}
+
+					}
+				} else {
+					DBModelColumn c = new DBModelColumn(attribute.getName(), ct, javaType, oppositePropery);
+					t.add(c);
+				}
 			}
 		}
 		return sm;
@@ -195,7 +219,7 @@ public class DBModelBuilder {
 				return owningSide ? ColType.ONE_TO_ONE_OWNING_SIDE : ColType.ONE_TO_ONE_NON_OWNING_SIDE;
 			}
 		} else if (at == PersistentAttributeType.EMBEDDED) {
-			return ColType.ID;
+			return ColType.ID_COMPOSED;
 		}
 		LOG.severe("Can not find type: " + at);
 		return null;
