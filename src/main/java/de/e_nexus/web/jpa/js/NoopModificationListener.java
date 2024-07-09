@@ -17,10 +17,9 @@
  */
 package de.e_nexus.web.jpa.js;
 
-import javax.inject.Named;
-
 import de.e_nexus.web.jpa.js.mod.DBModelColumn;
 import de.e_nexus.web.jpa.js.mod.DBModelTable;
+import jakarta.inject.Named;
 
 @Named
 public class NoopModificationListener implements JSONJavaScriptModificationListener<Object, Object> {

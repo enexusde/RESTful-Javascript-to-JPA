@@ -17,16 +17,15 @@
  */
 package de.e_nexus.web.jpa.js.mod;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import javax.inject.Named;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-
 import org.springframework.beans.factory.SmartInitializingSingleton;
+
+import jakarta.inject.Named;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 @Named
 public class DefaultDBModelHolder implements DBModelHolder, SmartInitializingSingleton {
@@ -49,7 +48,7 @@ public class DefaultDBModelHolder implements DBModelHolder, SmartInitializingSin
 	}
 
 	@Override
-	public DBModelTable getEntity(String entityName) {
+	public DBModelTable getEntity(final String entityName) {
 		for (DBModelTable t : getModel()) {
 			if (t.getName().equals(entityName)) {
 				return t;
@@ -59,7 +58,7 @@ public class DefaultDBModelHolder implements DBModelHolder, SmartInitializingSin
 	}
 
 	@Override
-	public Set<DBModelColumn> getIdColumns(DBModelTable entityTable) {
+	public Set<DBModelColumn> getIdColumns(final DBModelTable entityTable) {
 		Set<DBModelColumn> cols = new LinkedHashSet<DBModelColumn>();
 		for (DBModelColumn c : entityTable) {
 			if (c.getColtype() == ColType.ID | c.getColtype() == ColType.ID_COMPOSED) {

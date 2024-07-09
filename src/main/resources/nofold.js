@@ -1,46 +1,43 @@
-function build(jsm, urlContextWithTailingSlash) {
+function build(schema, urlContextWithTailingSlash) {
 	"use strict";
-	var ctx = urlContextWithTailingSlash;
+	var urlContext = urlContextWithTailingSlash;
 	var r = XMLHttpRequest;
-	var p = Object.defineProperty;
-	var euc = encodeURIComponent;
-	var jp = JSON.parse;
-	var rt = "responseText";
 
-	var m = new Object();
-	m.cache = {};
-	m.working = [];
+	var memory = new Object();
+	memory.cache = {};
+	memory.working = [];
 
 	var undef = function(o) {
 		return typeof o === 'undefined';
 	}
-	function addMessage(msg, data, t, ky) {
-		msg += tcheck(data[ky], t[ky].t == tm.REQUIRED_BOOLEAN, 'boolean', false, ky);
-		msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_BOOLEAN, 'boolean', true, ky);
-		msg += tcheck(data[ky], t[ky].t == tm.REQUIRED_NUMBER, 'number', false, ky);
-		msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_NUMBER, 'number', true, ky);
-		msg += tcheck(data[ky], t[ky].t == tm.REQUIRED_STRING_OR_CHAR, 'string', false, ky);
-		msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_STRING_OR_CHAR, 'string', true, ky);
-		msg += tcheck(data[ky], t[ky].t == tm.REQUIRED_BODY_DATA, 'object', false, ky);
-		msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_BODY_DATA, 'object', true, ky);
-		msg += tcheck(data[ky], t[ky].t == tm.OPTIONAL_MANY_TO_ONE, 'number', true, ky);
-		return msg;
+	function addMessage(errMsg, entity, entityTypeMap, fieldName) {
+		var fieldValue = entity[fieldName];
+		errMsg += typeCheck(fieldValue, entityTypeMap[fieldName].t == tm.REQUIRED_BOOLEAN, 'boolean', false, fieldName);
+		errMsg += typeCheck(fieldValue, entityTypeMap[fieldName].t == tm.OPTIONAL_BOOLEAN, 'boolean', true, fieldName);
+		errMsg += typeCheck(fieldValue, entityTypeMap[fieldName].t == tm.REQUIRED_NUMBER, 'number', false, fieldName);
+		errMsg += typeCheck(fieldValue, entityTypeMap[fieldName].t == tm.OPTIONAL_NUMBER, 'number', true, fieldName);
+		errMsg += typeCheck(fieldValue, entityTypeMap[fieldName].t == tm.REQUIRED_STRING_OR_CHAR, 'string', false, fieldName);
+		errMsg += typeCheck(fieldValue, entityTypeMap[fieldName].t == tm.OPTIONAL_STRING_OR_CHAR, 'string', true, fieldName);
+		errMsg += typeCheck(fieldValue, entityTypeMap[fieldName].t == tm.REQUIRED_BODY_DATA, 'object', false, fieldName);
+		errMsg += typeCheck(fieldValue, entityTypeMap[fieldName].t == tm.OPTIONAL_BODY_DATA, 'object', true, fieldName);
+		errMsg += typeCheck(fieldValue, entityTypeMap[fieldName].t == tm.OPTIONAL_MANY_TO_ONE, 'number', true, fieldName);
+		return errMsg;
 	}
-	function sizeOf(entity) {
-		var x = new r();
-		var l = -1;
-		x.open('GET', ctx + entity + '/', false);
-		x.onreadystatechange = function() {
-			if (x.readyState == 4) {
-				l = jp(x[rt]).count * 1;
+	function getRowcount(entity) {
+		var request = new r();
+		var result = -1;
+		request.open('GET', urlContext + entity + '/', false);
+		request.onreadystatechange = function() {
+			if (request.readyState == 4) {
+				result = JSON.parse(request.responseText).count * 1;
 			}
 		}
-		x.send();
-		return l;
+		request.send();
+		return result;
 	}
 
-	function add(x, name, value) {
-		x.setRequestHeader("x-" + name, euc(value));
+	function addRequestHeader(x, name, value) {
+		x.setRequestHeader("x-" + name, encodeURIComponent(value));
 	}
 
 	function loadIntoCache(url) {
@@ -48,125 +45,125 @@ function build(jsm, urlContextWithTailingSlash) {
 		x.open('GET', url, false);
 		x.onreadystatechange = function() {
 			if (x.readyState == 4) {
-				var l = jp(x[rt]);
-				if (m.cache[l.entity] === undefined) {
-					m.cache[l.entity] = new Object();
+				var l = JSON.parse(x["responseText"]);
+				if (memory.cache[l.entity] === undefined) {
+					memory.cache[l.entity] = new Object();
 				}
-				m.cache[l.entity][l.index] = l;
+				memory.cache[l.entity][l.index] = l;
 			}
 		}
 		x.send();
 	}
 
-	function tcheck(act, req, reqtn, nullable, ky) {
-		if (req) {
-			if (nullable && act === null) {
+	function typeCheck(fieldValue, enableThisCheck, requiredTypename, nullable, fieldName) {
+		if (enableThisCheck) {
+			if (nullable && fieldValue === null) {
 				return "";
 			}
-			if (typeof act !== reqtn) {
-				return '\n  ' + ky + ' must be ' + reqtn + (nullable ? ' or null' : '') + ' but is ' + (act === null ? 'null' : "" + typeof act) + '! ';
-
+			if (typeof fieldValue !== requiredTypename) {
+				return '\n  ' + fieldName + ' must be ' + requiredTypename + (nullable ? ' or null' : '') + ' but is ' + (fieldValue === null ? 'null' : "" + typeof fieldValue) + '! ';
 			}
 		}
 		return '';
 	}
 
-	function lazy(entity, index) {
-		loadIntoCache(ctx + entity + '/' + index);
-		var json = m.cache[entity][index];
-		var names = Object.keys(json.payload);
+	function lazy(entityName, entityRowIndex) {
+		loadIntoCache(urlContext + entityName + '/' + entityRowIndex);
+		var json = memory.cache[entityName][entityRowIndex];
+		var entityPropertyNames = Object.keys(json.payload);
 		var o = new Object();
-		function constructProperty(entity, index, property) {
-			p(o, property, {
+		function constructProperty(thisEntityName, entityRowIndex, entityFieldName) {
+			Object.defineProperty(o, entityFieldName, {
 				enumerable : true,
 				configurable : true,
 				get : function(e) {
-					var val = m.cache[entity][index].payload[property];
-					var p = jsm[entity][property];
+					var val = memory.cache[thisEntityName][entityRowIndex].payload[entityFieldName];
+					var p = schema[thisEntityName][entityFieldName];
 					if (p.t == tm.ONE_TO_MANY) {
 						var o = [];
 						for (var i = 0; i < val.length; i++) {
-							o.push(m[p.type][val[i]]);
+							o.push(memory[p.type][val[i]]);
 						}
 						return o;
 					}
 					if (p.t == tm.MANY_TO_MANY_OWNER || p.t == tm.MANY_TO_MANY_NON_OWNER) {
 						var o = [];
 						for (var i = 0; i < val.length; i++) {
-							o.push(m[p.type][val[i]]);
+							o.push(memory[p.type][val[i]]);
 						}
 						o.push = function(e,cb){
-							var x = new r();
-							x.onreadystatechange = function() {
-								if (x.readyState == 4) {
-									if (cb!=null) cb(x);
+							var request = new r();
+							request.onreadystatechange = function() {
+								if (request.readyState == 4) {
+									if (cb!=null) cb(request);
 								}
 							}
-							x.open('POST', ctx + entity + '/' + index + '/' + property + '/', cb!=null);
-							x.send(e);
+							request.open('POST', urlContext + thisEntityName + '/' + entityRowIndex + '/' + entityFieldName + '/', cb!=null);
+							request.send(e);
 						}
 						return o;
 					}
 					if (p.t == tm.REQUIRED_MANY_TO_ONE) {
-						return m[p.type][val]
+						return memory[p.type][val]
 					}
 					return val;
 				},
-				set : function(e) {
-					var type = jsm[entity];
-					var prop = type[property];
-					var msg = addMessage('', e, prop, property);
-					if (msg != '')
-						throw msg;
-					var x = new r();
-					x.onreadystatechange = function() {
-						if (x.readyState == 4) {
-							m.cache[entity][index].payload[property] = e;
-							m.working.splice(m.working.indexOf(x));
+				set : function(newPropertyValue) {
+					var myTypeDescription = schema[thisEntityName];
+					var example = {};
+					example[entityFieldName] = newPropertyValue;
+					var errMsg = addMessage('', example, myTypeDescription, entityFieldName);
+					if (errMsg != '')
+						throw errMsg;
+					var request = new r();
+					request.onreadystatechange = function() {
+						if (request.readyState == 4) {
+							memory.cache[thisEntityName][entityRowIndex].payload[entityFieldName] = newPropertyValue;
+							memory.working.splice(memory.working.indexOf(request));
 						}
 					}
-					x.open('POST', ctx + entity + '/' + index + '/' + property, false);
-					m.working.push(x);
-					if (e == null) {
-						add(x, property + '-null', true);
-						x.send();
+					request.open('POST', urlContext + thisEntityName + '/' + entityRowIndex + '/' + entityFieldName, false);
+					memory.working.push(request);
+					if (newPropertyValue == null) {
+						addRequestHeader(request, entityFieldName + '-null', true);
+						request.send();
 					} else {
-						x.send(e);
+						request.send(newPropertyValue);
 					}
 
 				}
 			});
 		}
-		for (var i = 0; i < names.length; i++) {
-			constructProperty(entity, index, names[i]);
+		for (var i = 0; i < entityPropertyNames.length; i++) {
+			constructProperty(entityName, entityRowIndex, entityPropertyNames[i]);
 		}
 		// construct virtual properties
-		var mod = jsm[entity];
-		names = Object.keys(mod);
-		for (var i = 0; i < names.length; i++) {
-			var name = names[i];
-			var virt = mod[name].t == tm.OPTIONAL_BODY_DATA || mod[name].t == tm.REQUIRED_BODY_DATA || mod[name].t == tm.OPTIONAL_BODY_DATA_BLOB || mod[name].t == tm.REQUIRED_BODY_DATA_BLOB;
+		var entityNamespace = schema[entityName];
+		entityPropertyNames = Object.keys(entityNamespace);
+		for (var i = 0; i < entityPropertyNames.length; i++) {
+			var entityPropertyName = entityPropertyNames[i];
+			var virt = entityNamespace[entityPropertyName].t == tm.OPTIONAL_BODY_DATA || entityNamespace[entityPropertyName].t == tm.REQUIRED_BODY_DATA || entityNamespace[entityPropertyName].t == tm.OPTIONAL_BODY_DATA_BLOB || entityNamespace[entityPropertyName].t == tm.REQUIRED_BODY_DATA_BLOB;
 			if (virt) {
 				var constructLazyVirtual=function(o, name, index) {
-					p(o, name, {
+					Object.defineProperty(o, name, {
 						enumerable : true,
 						configurable : true,
 						get : function(e) {
 							var x = new r();
-							x.open("GET", urlContextWithTailingSlash + entity + '/' + index + '/' + name, false);
+							x.open("GET", urlContextWithTailingSlash + entityName + '/' + index + '/' + name, false);
 							x.send();
-							var json = jp(x[rt]);
+							var json = JSON.parse(x["responseText"]);
 							return json;
 						},
 						set : function(e) {
 							var x = new r();
-							x.open("POST", urlContextWithTailingSlash + entity + '/' + index + '/' + name, false);
+							x.open("POST", urlContextWithTailingSlash + entityName + '/' + index + '/' + name, false);
 							x.send(new Int8Array(e));
 							return e;
 						}
 					});
 				}
-				constructLazyVirtual(o, name, index);
+				constructLazyVirtual(o, entityPropertyName, entityRowIndex);
 			}
 		}
 
@@ -177,7 +174,7 @@ function build(jsm, urlContextWithTailingSlash) {
 					if (cb != null) {
 						var val = x;
 						if (x.status == 428) {
-							val = 'Can not remove ' + entity + ' because preconditions failed!';
+							val = 'Can not remove ' + entityName + ' because preconditions failed!';
 							console.warn(val);
 							val = new Error(val);
 						}
@@ -185,7 +182,7 @@ function build(jsm, urlContextWithTailingSlash) {
 					}
 				}
 			}
-			x.open('DELETE', urlContextWithTailingSlash + '/' + entity + '/' + index, cb != null);
+			x.open('DELETE', urlContextWithTailingSlash + '/' + entityName + '/' + entityRowIndex, cb != null);
 			x.send();
 			if (cb == null && x.status == 428)
 				throw 'Preconditions failed';
@@ -193,26 +190,26 @@ function build(jsm, urlContextWithTailingSlash) {
 		};
 		return o;
 	}
-	function constructLazy(ob, i, key) {
-		p(ob, i, {
+	function constructLazy(entityNamespace, entityRowIndex, entityName) {
+		Object.defineProperty(entityNamespace, entityRowIndex, {
 			enumerable : false,
 			configurable : false,
 			get : function() {
-				return lazy(key, i);
+				return lazy(entityName, entityRowIndex);
 			}
 		})
 	}
 
-	function construct(ob, key) {
-		var t = jsm[key];
-		var fields = Object.keys(t);
-		function check(data) {
+	function construct(ob, entityName) {
+		var entityNamespace = schema[entityName];
+		var entityFieldnames = Object.keys(entityNamespace);
+		function checkEntityCreation(newEntityJSON) {
 			var required = [];
 			var optional = [];
 			var msg = '';
-			for (var m = 0; m < fields.length; m++) {
-				var c = t[fields[m]];
-				var cn = fields[m];
+			for (var entityFieldIndex = 0; entityFieldIndex < entityFieldnames.length; entityFieldIndex++) {
+				var c = entityNamespace[entityFieldnames[entityFieldIndex]];
+				var cn = entityFieldnames[entityFieldIndex];
 				if (c.t == tm.OPTIONAL_NUMBER || c.t == tm.OPTIONAL_BOOLEAN || c.t == tm.OPTIONAL_STRING_OR_CHAR || c.t == tm.OPTIONAL_BODY_DATA || c.t == tm.OPTIONAL_BODY_DATA_BLOB
 						|| c.t == tm.OPTIONAL_MANY_TO_ONE) {
 					optional.push(cn);
@@ -222,78 +219,78 @@ function build(jsm, urlContextWithTailingSlash) {
 					required.push(cn);
 				}
 			}
-			var keys = Object.keys(data);
-			for (var k = 0; k < keys.length; k++) {
-				var ky = keys[k];
-				if (undef(t[ky])) {
-					msg += '\n  ' + ky + ' is unknown! ';
+			var newEntityFieldnames = Object.keys(newEntityJSON);
+			for (var newEntityFieldnameIndex = 0; newEntityFieldnameIndex < newEntityFieldnames.length; newEntityFieldnameIndex++) {
+				var newEntityFieldname = newEntityFieldnames[newEntityFieldnameIndex];
+				if (undef(entityNamespace[newEntityFieldname])) {
+					msg += '\n  ' + newEntityFieldname + ' is unknown! ';
 					continue;
 				}
-				msg = addMessage(msg, data, t, ky);
+				msg = addMessage(msg, newEntityJSON, entityNamespace, newEntityFieldname);
 			}
-			for (var k = 0; k < required.length; k++) {
-				var ky = required[k];
-				if (undef(data[ky])) {
-					msg += '\n  ' + ky + ' is required! ';
+			for (var newEntityFieldnameIndex = 0; newEntityFieldnameIndex < required.length; newEntityFieldnameIndex++) {
+				var newEntityFieldname = required[newEntityFieldnameIndex];
+				if (undef(newEntityJSON[newEntityFieldname])) {
+					msg += '\n  ' + newEntityFieldname + ' is required! ';
 				}
 			}
-			for (var k = 0; k < optional.length; k++) {
-				var ky = optional[k];
-				if (undef(data[ky])) {
-					msg += '\n  ' + ky + ' is required, may be null! ';
+			for (var newEntityFieldnameIndex = 0; newEntityFieldnameIndex < optional.length; newEntityFieldnameIndex++) {
+				var newEntityFieldname = optional[newEntityFieldnameIndex];
+				if (undef(newEntityJSON[newEntityFieldname])) {
+					msg += '\n  ' + newEntityFieldname + ' is required, may be null! ';
 				}
 			}
 			if (msg != '') {
-				throw key + ": " + msg;
+				throw entityName + ": " + msg;
 			}
 		}
 
 		var tableDescriptor = {
 			enumerable : true,
 			configurable : false,
-			get : function(e) {
-				var size = sizeOf(key);
-				var ob = new Array(size);
-				function push(data, cb, additional) {
-					var pushInternal = function(data, cb, additional){
+			get : function() {
+				var rowcount = getRowcount(entityName);
+				var entityNamespace = new Array(rowcount);
+				function pushFunction(data, cb, additional) {
+					var saveNewEntityFunction = function(entityJson, callback, additional){
 						var val = null;
-						check(data);
-						var x = new r();
-						var xurl = urlContextWithTailingSlash + key + '/';
+						var request = new r();
+						checkEntityCreation(entityJson);
+						var xurl = urlContextWithTailingSlash + entityName + '/';
 						if(typeof additional != 'undefined') {
 							xurl = xurl + '?' + additional;
 						}
-						x.open('PUT', xurl, arguments.length > 1);
-						x.onreadystatechange = function() {
-							if (x.readyState == 4) {
-								var json = jp(x[rt]);
+						request.open('PUT', xurl, arguments.length > 1);
+						request.onreadystatechange = function() {
+							if (request.readyState == 4) {
+								var json = JSON.parse(request["responseText"]);
 								if (json.error) {
-									console.warn("Server error while adding a '" + key + "': " + json.error);
+									console.warn("Server error while adding a '" + entityName + "': " + json.error);
 									alert(json.error);
 								}
 								if (typeof json.id === 'number') {
 									val = json.id;
-									if (typeof cb === 'function') {
-										cb(json);
+									if (typeof callback === 'function') {
+										callback(json);
 									}
 								}
 							}
 						}
 						var body = null;
 						var hasBody = false;
-						for (var i = 0; i < fields.length; i++) {
-							var name = fields[i];
-							var value = data[name];
-							var f = t[name];
+						for (var i = 0; i < entityFieldnames.length; i++) {
+							var fieldname = entityFieldnames[i];
+							var value = entityJson[fieldname];
+							var f = schema[entityName][fieldname];
 							if (f.t == tm.REQUIRED_BODY_DATA || f.t == tm.OPTIONAL_BODY_DATA||f.t == tm.REQUIRED_BODY_DATA_BLOB || f.t == tm.OPTIONAL_BODY_DATA_BLOB) {
 								hasBody = true;
-								var d = data[fields[i]];
+								var d = entityJson[entityFieldnames[i]];
 								if (d instanceof File) {
 									var fr = new FileReader();
 									fr.onload = function (res){
-										var newData = Object.assign({},data,{});
-										newData[fields[i]] = new Int8Array(res.target.result);
-										pushInternal(newData, cb);
+										var newData = Object.assign({},entityJson,{});
+										newData[entityFieldnames[i]] = new Int8Array(res.target.result);
+										saveNewEntityFunction(newData, callback);
 									}
 									fr.readAsArrayBuffer(d);
 									return;
@@ -304,33 +301,33 @@ function build(jsm, urlContextWithTailingSlash) {
 								}
 							} else {
 								if (value === null) {
-									add(x, name + "-null", true);
+									addRequestHeader(request, fieldname + "-null", true);
 								}
-								add(x, name, value);
+								addRequestHeader(request, fieldname, value);
 							}
 						}
 						if (hasBody) {
-							x.send(body);
+							request.send(body);
 						} else {
-							x.send();
+							request.send();
 						}
 						return val;
 					}
-					return pushInternal(data, cb, additional); 
+					return saveNewEntityFunction(data, cb, additional); 
 				}
-				p(ob, 'push', {
+				Object.defineProperty(entityNamespace, 'push', {
 					enumerable : false,
 					configurable : false,
 					get : function() {
-						return push;
+						return pushFunction;
 					}
 				});
-				ob.load = function(id, cb) {
-					var x = new r();
+				entityNamespace.load = function(id, cb) {
+					var request = new r();
 					var result;
-					x.onreadystatechange = function() {
-						if (x.readyState == 4) {
-							result = jp(x[rt]);
+					request.onreadystatechange = function() {
+						if (request.readyState == 4) {
+							result = JSON.parse(request["responseText"]);
 							if (result.error != null) {
 								console.warn(result.error);
 							} else {
@@ -338,26 +335,26 @@ function build(jsm, urlContextWithTailingSlash) {
 							}
 						}
 					}
-					x.open('GET', urlContextWithTailingSlash + key + '/?id=' + id, cb != null);
-					x.send();
+					request.open('GET', urlContextWithTailingSlash + entityName + '/?id=' + id, cb != null);
+					request.send();
 					if (cb == null) {
 						return result;
 					}
 				}
-				for (var i = 0; i < size; i++) {
-					constructLazy(ob, i, key);
+				for (var i = 0; i < rowcount; i++) {
+					constructLazy(entityNamespace, i, entityName);
 				}
-				return ob;
+				return entityNamespace;
 			},
 			set : function(v) {
 			}
 		}
-		p(ob, key, tableDescriptor);
+		Object.defineProperty(ob, entityName, tableDescriptor);
 	}
-	var keys = Object.keys(jsm);
+	var keys = Object.keys(schema);
 	for (var i = 0; i < keys.length; i++) {
 		var key = keys[i];
-		construct(m, key);
+		construct(memory, key);
 	}
-	return m;
+	return memory;
 }

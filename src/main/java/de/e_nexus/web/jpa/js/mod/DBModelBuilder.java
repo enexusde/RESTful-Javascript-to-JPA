@@ -17,7 +17,6 @@
  */
 package de.e_nexus.web.jpa.js.mod;
 
-import java.beans.BeanDescriptor;
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -29,27 +28,25 @@ import java.sql.Blob;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.logging.Logger;
 
-import javax.management.RuntimeErrorException;
-import javax.persistence.EntityManager;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.metamodel.Attribute;
-import javax.persistence.metamodel.Attribute.PersistentAttributeType;
-import javax.persistence.metamodel.EntityType;
-import javax.persistence.metamodel.Metamodel;
-import javax.persistence.metamodel.PluralAttribute;
-import javax.persistence.metamodel.SetAttribute;
-import javax.persistence.metamodel.SingularAttribute;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.metamodel.Attribute;
+import jakarta.persistence.metamodel.Attribute.PersistentAttributeType;
+import jakarta.persistence.metamodel.EntityType;
+import jakarta.persistence.metamodel.Metamodel;
+import jakarta.persistence.metamodel.PluralAttribute;
+import jakarta.persistence.metamodel.SetAttribute;
+import jakarta.persistence.metamodel.SingularAttribute;
 
 public class DBModelBuilder {
 	private static final Logger LOG = Logger.getLogger(DBModelBuilder.class.getCanonicalName());
 	private EntityManager entityManager;
 
-	public void setEntityManager(EntityManager myEntityManager) {
+	public void setEntityManager(final EntityManager myEntityManager) {
 		entityManager = myEntityManager;
 	}
 
@@ -111,7 +108,7 @@ public class DBModelBuilder {
 		return sm;
 	}
 
-	private ColType calculateType(Attribute<?, ?> attribute) {
+	private ColType calculateType(final Attribute<?, ?> attribute) {
 		PersistentAttributeType at = attribute.getPersistentAttributeType();
 		if (at == PersistentAttributeType.BASIC) {
 			if (attribute instanceof SingularAttribute) {

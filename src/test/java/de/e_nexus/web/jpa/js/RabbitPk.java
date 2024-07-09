@@ -2,8 +2,8 @@ package de.e_nexus.web.jpa.js;
 
 import java.io.Serializable;
 
-import javax.persistence.Column;
-import javax.persistence.Embeddable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 
 @Embeddable
 public class RabbitPk implements Serializable {
@@ -19,11 +19,11 @@ public class RabbitPk implements Serializable {
 		return id2;
 	}
 
-	public void setId1(long id1) {
+	public void setId1(final long id1) {
 		this.id1 = id1;
 	}
 
-	public void setId2(long id2) {
+	public void setId2(final long id2) {
 		this.id2 = id2;
 	}
 }

@@ -17,10 +17,9 @@
  */
 package de.e_nexus.web.jpa.js;
 
-import javax.servlet.http.HttpServletRequest;
-
 import de.e_nexus.web.jpa.js.mod.DBModelColumn;
 import de.e_nexus.web.jpa.js.mod.DBModelTable;
+import jakarta.servlet.http.HttpServletRequest;
 
 public interface JSMapperPersistenceManager {
 

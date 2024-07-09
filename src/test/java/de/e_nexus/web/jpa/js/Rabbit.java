@@ -2,9 +2,9 @@ package de.e_nexus.web.jpa.js;
 
 import java.sql.Blob;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
 
 @Entity
 public class Rabbit {
@@ -18,7 +18,7 @@ public class Rabbit {
 		return id;
 	}
 
-	public void setId(RabbitPk id) {
+	public void setId(final RabbitPk id) {
 		this.id = id;
 	}
 
@@ -27,7 +27,7 @@ public class Rabbit {
 		return photo;
 	}
 
-	public void setPhoto(Blob photo) {
+	public void setPhoto(final Blob photo) {
 		this.photo = photo;
 	}
 
@@ -36,7 +36,7 @@ public class Rabbit {
 		return born;
 	}
 
-	public void setBorn(java.sql.Date born) {
+	public void setBorn(final java.sql.Date born) {
 		this.born = born;
 	}
 }

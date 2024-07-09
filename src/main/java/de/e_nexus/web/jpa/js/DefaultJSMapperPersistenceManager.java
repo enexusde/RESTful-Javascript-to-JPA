@@ -23,17 +23,16 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.servlet.ServletRequestEvent;
-import javax.servlet.http.HttpServletRequest;
-
 import org.springframework.web.context.request.RequestContextListener;
 
 import de.e_nexus.web.jpa.js.mod.DBModelColumn;
 import de.e_nexus.web.jpa.js.mod.DBModelTable;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.servlet.ServletRequestEvent;
+import jakarta.servlet.http.HttpServletRequest;
 
 @Named
 public class DefaultJSMapperPersistenceManager implements JSMapperPersistenceManager {
@@ -45,7 +44,8 @@ public class DefaultJSMapperPersistenceManager implements JSMapperPersistenceMan
 	@Inject
 	private final JSONJavaScriptModificationListener<?, ?>[] listeners = null;
 
-	public void removeAction(DBModelTable entityTable, Object entity, HttpServletRequest request) {
+	@Override
+	public void removeAction(final DBModelTable entityTable, final Object entity, final HttpServletRequest request) {
 		Map.Entry<ServletRequestEvent, RequestContextListener> state = null;
 		try {
 
@@ -72,13 +72,13 @@ public class DefaultJSMapperPersistenceManager implements JSMapperPersistenceMan
 		}
 	}
 
-	private void removeState(Map.Entry<ServletRequestEvent, RequestContextListener> state) {
+	private void removeState(final Map.Entry<ServletRequestEvent, RequestContextListener> state) {
 		if (state != null) {
 			state.getValue().requestDestroyed(state.getKey());
 		}
 	}
 
-	private Map.Entry<ServletRequestEvent, RequestContextListener> initState(HttpServletRequest request,
+	private Map.Entry<ServletRequestEvent, RequestContextListener> initState(final HttpServletRequest request,
 			Map.Entry<ServletRequestEvent, RequestContextListener> state) {
 		if (state == null) {
 			ServletRequestEvent requestEvent = new ServletRequestEvent(request.getServletContext(), request);
@@ -89,8 +89,9 @@ public class DefaultJSMapperPersistenceManager implements JSMapperPersistenceMan
 		return state;
 	}
 
-	public void persistAction(DBModelTable table, Object entity, DBModelColumn c, Object newValue,
-			HttpServletRequest request) {
+	@Override
+	public void persistAction(final DBModelTable table, final Object entity, final DBModelColumn c,
+			final Object newValue, final HttpServletRequest request) {
 		Map.Entry<ServletRequestEvent, RequestContextListener> state = null;
 		try {
 			Set<JSONJavaScriptModificationListener> listeners = CustomUtils.limit(this.listeners, entity, newValue);
@@ -115,8 +116,9 @@ public class DefaultJSMapperPersistenceManager implements JSMapperPersistenceMan
 		}
 	}
 
-	public void persistN2MAction(DBModelTable ownerMapping, DBModelColumn ownerColumn, Object ownerEntity,
-			Object nonOwnerEntity, HttpServletRequest request) {
+	@Override
+	public void persistN2MAction(final DBModelTable ownerMapping, final DBModelColumn ownerColumn,
+			final Object ownerEntity, final Object nonOwnerEntity, final HttpServletRequest request) {
 		Map.Entry<ServletRequestEvent, RequestContextListener> state = null;
 		try {
 			Set<JSONJavaScriptModificationListener> listeners = CustomUtils.limit(this.listeners, ownerEntity,
@@ -144,7 +146,8 @@ public class DefaultJSMapperPersistenceManager implements JSMapperPersistenceMan
 		}
 	}
 
-	public void insertNewAction(DBModelTable t, Object entity, HttpServletRequest request) {
+	@Override
+	public void insertNewAction(final DBModelTable t, final Object entity, final HttpServletRequest request) {
 		Map.Entry<ServletRequestEvent, RequestContextListener> state = null;
 		try {
 			Set<JSONJavaScriptModificationListener> listeners = CustomUtils.limit(this.listeners, entity, null);
@@ -169,12 +172,12 @@ public class DefaultJSMapperPersistenceManager implements JSMapperPersistenceMan
 		}
 	}
 
-	public void persistSingleFieldAction(DBModelTable t, DBModelColumn c, Object entity, Object genuineValue,
-			HttpServletRequest request) {
+	@Override
+	public void persistSingleFieldAction(final DBModelTable t, final DBModelColumn c, final Object entity,
+			final Object genuineValue, final HttpServletRequest request) {
 		Map.Entry<ServletRequestEvent, RequestContextListener> state = null;
 		try {
-			Set<JSONJavaScriptModificationListener> listeners = CustomUtils.limit(this.listeners, entity,
-					genuineValue);
+			Set<JSONJavaScriptModificationListener> listeners = CustomUtils.limit(this.listeners, entity, genuineValue);
 			for (JSONJavaScriptModificationListener l : listeners) {
 				try {
 					state = initState(request, state);

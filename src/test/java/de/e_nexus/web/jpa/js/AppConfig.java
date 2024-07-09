@@ -19,7 +19,6 @@ package de.e_nexus.web.jpa.js;
 
 import java.sql.SQLException;
 
-import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
 
 import org.h2.jdbcx.JdbcConnectionPool;
@@ -27,6 +26,7 @@ import org.hibernate.cfg.Environment;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.dialect.internal.StandardDialectResolver;
 import org.hibernate.engine.jdbc.dialect.spi.DatabaseMetaDataDialectResolutionInfoAdapter;
+import org.hibernate.jpa.HibernatePersistenceProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -35,22 +35,26 @@ import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import jakarta.persistence.EntityManagerFactory;
 
 @Configuration
 @EnableTransactionManagement
 @ComponentScan("de.e_nexus.web.jpa.js")
-public class AppConfig extends WebMvcConfigurerAdapter {
+public class AppConfig implements WebMvcConfigurer {
 
 	@Bean
-	protected LocalContainerEntityManagerFactoryBean emf(DataSource dataSource) throws SQLException {
+	protected LocalContainerEntityManagerFactoryBean emf(final DataSource dataSource) throws SQLException {
 		final LocalContainerEntityManagerFactoryBean emf = new LocalContainerEntityManagerFactoryBean();
-		emf.setPersistenceProviderClass(org.hibernate.jpa.HibernatePersistenceProvider.class);
 		emf.setPackagesToScan(AppConfig.class.getPackage().getName());
+
+		emf.setPersistenceProviderClass(HibernatePersistenceProvider.class);
 		emf.setDataSource(dataSource);
 		final StandardDialectResolver resolver = new StandardDialectResolver();
 		try {
-			final Dialect dialect = resolver.resolveDialect(new DatabaseMetaDataDialectResolutionInfoAdapter(dataSource.getConnection().getMetaData()));
+			final Dialect dialect = resolver.resolveDialect(
+					new DatabaseMetaDataDialectResolutionInfoAdapter(dataSource.getConnection().getMetaData()));
 			emf.getJpaPropertyMap().put(Environment.DIALECT, dialect.getClass().getCanonicalName());
 		} catch (SQLException databaseProblem) {
 			databaseProblem.printStackTrace();
@@ -61,7 +65,7 @@ public class AppConfig extends WebMvcConfigurerAdapter {
 	}
 
 	@Override
-	public void addResourceHandlers(ResourceHandlerRegistry registry) {
+	public void addResourceHandlers(final ResourceHandlerRegistry registry) {
 		registry.addResourceHandler("/**").addResourceLocations("classpath:/META-INF/resources/");
 	}
 
@@ -79,7 +83,8 @@ public class AppConfig extends WebMvcConfigurerAdapter {
 	 * This includes the {@link @Transactional Transactional}-annotation.
 	 */
 	@Bean
-	protected PlatformTransactionManager transactionManager(LocalContainerEntityManagerFactoryBean entityManagerFactory) {
+	protected PlatformTransactionManager transactionManager(
+			final LocalContainerEntityManagerFactoryBean entityManagerFactory) {
 		final EntityManagerFactory factory = entityManagerFactory.getObject();
 		final JpaTransactionManager manager = new JpaTransactionManager(factory);
 		return manager;

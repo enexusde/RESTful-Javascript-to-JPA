@@ -22,10 +22,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import de.e_nexus.web.jpa.js.mod.DBModelTable;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 public interface JSMapperController {
 	String getDetails(String entity, int index);

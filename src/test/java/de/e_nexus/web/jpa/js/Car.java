@@ -1,10 +1,10 @@
 package de.e_nexus.web.jpa.js;
 
-import javax.persistence.Entity;
-import javax.persistence.ForeignKey;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToOne;
+import jakarta.persistence.Entity;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
 
 @Entity
 public class Car {
@@ -17,7 +17,7 @@ public class Car {
 		return id;
 	}
 
-	public void setId(long id) {
+	public void setId(final long id) {
 		this.id = id;
 	}
 
@@ -27,7 +27,7 @@ public class Car {
 		return driver;
 	}
 
-	public void setDriver(Driver driver) {
+	public void setDriver(final Driver driver) {
 		this.driver = driver;
 	}
 }

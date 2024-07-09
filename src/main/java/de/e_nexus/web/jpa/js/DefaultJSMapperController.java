@@ -27,19 +27,11 @@ import java.net.URLDecoder;
 import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.transaction.Transactional;
 
 import org.springframework.beans.BeanWrapperImpl;
 
@@ -49,6 +41,14 @@ import de.e_nexus.web.jpa.js.mod.ColType;
 import de.e_nexus.web.jpa.js.mod.DBModelColumn;
 import de.e_nexus.web.jpa.js.mod.DBModelHolder;
 import de.e_nexus.web.jpa.js.mod.DBModelTable;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
 
 @Named
 public class DefaultJSMapperController implements JSMapperController {
@@ -78,27 +78,32 @@ public class DefaultJSMapperController implements JSMapperController {
 	@Inject
 	private final DBModelHolder model = null;
 
-	public Number getId(Object entity) {
+	public Number getId(final Object entity) {
 		for (DBModelTable t : model.getModel()) {
 			if (t.getEntityClass().isInstance(entity)) {
-				DBModelColumn c = model.getIdColumn(t);
-				BeanWrapperImpl bwi = new BeanWrapperImpl(entity);
-				Object o = bwi.getPropertyValue(c.getName());
-				if (o instanceof Number)
-					return (Number) o;
+				for (DBModelColumn col : model.getIdColumns(t)) {
+					if (col.getColtype() == ColType.ID) {
+						BeanWrapperImpl bwi = new BeanWrapperImpl(entity);
+						Object o = bwi.getPropertyValue(col.getName());
+						if (o instanceof Number)
+							return (Number) o;
+					}
+				}
 			}
 		}
 		return null;
 	}
 
-	public Number getIndex(Object val) {
+	public Number getIndex(final Object val) {
 		for (DBModelTable t : model.getModel()) {
 			if (t.getEntityClass().isInstance(val)) {
-				DBModelColumn c = model.getIdColumn(t);
-				BeanWrapperImpl bwi = new BeanWrapperImpl(val);
-				Object o = bwi.getPropertyValue(c.getName());
-
-				return indexer.getIndexById(o, c, t);
+				for (DBModelColumn col : model.getIdColumns(t)) {
+					if (col.getColtype() == ColType.ID) {
+						BeanWrapperImpl bwi = new BeanWrapperImpl(val);
+						Object o = bwi.getPropertyValue(col.getName());
+						return indexer.getIndexById(o, col, t);
+					}
+				}
 			}
 		}
 		return INDEX_ERROR_VALUE;
@@ -106,7 +111,7 @@ public class DefaultJSMapperController implements JSMapperController {
 
 	@Transactional
 	@Override
-	public void doGetCount(DBModelTable dbModelTable, HttpServletResponse resp) throws IOException {
+	public void doGetCount(final DBModelTable dbModelTable, final HttpServletResponse resp) throws IOException {
 		Number n = entityManager
 				.createQuery("SELECT COUNT(*) FROM " + dbModelTable.getEntityClass().getCanonicalName(), Number.class)
 				.getSingleResult();
@@ -122,7 +127,8 @@ public class DefaultJSMapperController implements JSMapperController {
 
 	@Override
 	@Transactional
-	public Number put(String entityName, Map<String, String> headers, byte[] ba, HttpServletRequest request) {
+	public Number put(final String entityName, final Map<String, String> headers, final byte[] ba,
+			final HttpServletRequest request) {
 		DBModelTable table = model.getEntity(entityName);
 		Object put = sanitizedPut(table, headers, ba, request);
 		return getId(put);
@@ -130,7 +136,7 @@ public class DefaultJSMapperController implements JSMapperController {
 
 	@Override
 	@Transactional
-	public String getDetails(String entityName, int index) {
+	public String getDetails(final String entityName, final int index) {
 		DBModelTable table = model.getEntity(entityName);
 		Object entityId = indexer.findId(index, table);
 		Object entity = entityManager.find(table.getEntityClass(), entityId);
@@ -168,7 +174,7 @@ public class DefaultJSMapperController implements JSMapperController {
 
 	@Override
 	@Transactional
-	public void updateSimpleFieldValue(File f, HttpServletRequest req, URL url) {
+	public void updateSimpleFieldValue(final File f, final HttpServletRequest req, final URL url) {
 		String property = f.getName();
 		String index = f.getParentFile().getName();
 		String entity = f.getParentFile().getParentFile().getName();
@@ -184,19 +190,22 @@ public class DefaultJSMapperController implements JSMapperController {
 
 	@Override
 	@Transactional
-	public void deleteEntity(File f, HttpServletRequest request) {
+	public void deleteEntity(final File f, final HttpServletRequest request) {
 		String entityName = f.getParentFile().getName();
 		DBModelTable entityTable = model.getEntity(entityName);
-		DBModelColumn idCol = model.getIdColumn(entityTable);
-
-		Object id = indexer.findId(Integer.parseInt(f.getName()), entityTable, idCol);
-		Object entity = entityManager.find(entityTable.getEntityClass(), id);
-		persistenceManager.removeAction(entityTable, entity, request);
+		for (DBModelColumn col : model.getIdColumns(entityTable)) {
+			if (col.getColtype() == ColType.ID) {
+				Object id = indexer.findId(Integer.parseInt(f.getName()), entityTable, Collections.singleton(col));
+				Object entity = entityManager.find(entityTable.getEntityClass(), id);
+				persistenceManager.removeAction(entityTable, entity, request);
+				return;
+			}
+		}
 	}
 
 	@Override
 	@Transactional
-	public void updateRelation(File f, Integer newIndex, URL url, HttpServletRequest request) {
+	public void updateRelation(final File f, final Integer newIndex, final URL url, final HttpServletRequest request) {
 		String propertyName = f.getName();
 		int entityIndex = Integer.parseInt(f.getParentFile().getName());
 		String entityName = f.getParentFile().getParentFile().getName();
@@ -224,35 +233,43 @@ public class DefaultJSMapperController implements JSMapperController {
 
 	@Override
 	@Transactional
-	public String getIndexJSONById(String entity, int id) {
+	public String getIndexJSONById(final String entity, final int id) {
 		DBModelTable t = model.getEntity(entity);
-		DBModelColumn idc = model.getIdColumn(t);
-		Object pk = parseToFieldNumberType("" + id, idc.getType());
-		Object find = entityManager.find(t.getEntityClass(), pk);
-		Number index = getIndex(find);
-		if (index.intValue() == INDEX_ERROR_VALUE) {
-			return "{\"error\":\"No such pk for " + entity + "!\"}";
+		for (DBModelColumn idc : model.getIdColumns(t)) {
+			if (idc.getColtype() == ColType.ID) {
+				Object pk = parseToFieldNumberType("" + id, idc.getType());
+				Object find = entityManager.find(t.getEntityClass(), pk);
+				Number index = getIndex(find);
+				if (index.intValue() == INDEX_ERROR_VALUE) {
+					return "{\"error\":\"No such pk for " + entity + "!\"}";
+				}
+				return "{\"index\":" + index + "}";
+			}
 		}
-		return "{\"index\":" + index + "}";
+		throw null;
 	}
 
 	@Override
 	@Transactional
-	public int getIndexById(String entity, int id) {
+	public int getIndexById(final String entity, final int id) {
 		DBModelTable t = model.getEntity(entity);
-		DBModelColumn idc = model.getIdColumn(t);
-		Object pk = parseToFieldNumberType("" + id, idc.getType());
-		Object find = entityManager.find(t.getEntityClass(), pk);
-		Number index = getIndex(find);
-		if (index.intValue() == INDEX_ERROR_VALUE) {
-			return -1_000;
+		for (DBModelColumn idc : model.getIdColumns(t)) {
+			if (idc.getColtype() == ColType.ID) {
+				Object pk = parseToFieldNumberType("" + id, idc.getType());
+				Object find = entityManager.find(t.getEntityClass(), pk);
+				Number index = getIndex(find);
+				if (index.intValue() == INDEX_ERROR_VALUE) {
+					return -1_000;
+				}
+				return index.intValue();
+			}
 		}
-		return index.intValue();
+		throw null;
 	}
 
 	@Override
 	@Transactional
-	public void addN2M(File f, String data, HttpServletRequest request) {
+	public void addN2M(final File f, final String data, final HttpServletRequest request) {
 		String property = f.getName();
 		int ownerTableIndex = Integer.parseInt(f.getParentFile().getName());
 		String ownerTable = f.getParentFile().getParentFile().getName();
@@ -281,8 +298,8 @@ public class DefaultJSMapperController implements JSMapperController {
 		}
 	}
 
-	private void addN2M(DBModelTable ownerMapping, DBModelColumn ownerColumn, Object ownerEntity, Object nonOwnerEntity,
-			HttpServletRequest request) {
+	private void addN2M(final DBModelTable ownerMapping, final DBModelColumn ownerColumn, final Object ownerEntity,
+			final Object nonOwnerEntity, final HttpServletRequest request) {
 		BeanWrapperImpl bwi = new BeanWrapperImpl(ownerEntity);
 		Object collection = bwi.getPropertyValue(ownerColumn.getName());
 		if (collection instanceof Set) {
@@ -292,7 +309,7 @@ public class DefaultJSMapperController implements JSMapperController {
 		}
 	}
 
-	private Object parseToFieldNumberType(String stringValue, Class<?> clazz) {
+	private Object parseToFieldNumberType(final String stringValue, final Class<?> clazz) {
 		if (clazz == int.class || clazz == Integer.class) {
 			return Integer.valueOf(stringValue);
 		} else if (clazz == long.class || clazz == Long.class) {
@@ -329,7 +346,8 @@ public class DefaultJSMapperController implements JSMapperController {
 		}
 	}
 
-	private Object sanitize(DBModelColumn c, String decodedStringValue, Class<?> clazz, DBModelTable t) {
+	private Object sanitize(final DBModelColumn c, final String decodedStringValue, final Class<?> clazz,
+			final DBModelTable t) {
 		if (c.getColtype() == ColType.REQUIRED_STRING_OR_CHAR || c.getColtype() == ColType.OPTIONAL_STRING_OR_CHAR) {
 			if (decodedStringValue == null) {
 				return null;
@@ -353,7 +371,8 @@ public class DefaultJSMapperController implements JSMapperController {
 						if (decodedStringValue == null && c.getColtype() == ColType.OPTIONAL_MANY_TO_ONE) {
 							return null;
 						} else {
-							Object id = indexer.findId(Integer.parseInt(decodedStringValue), table, col);
+							Object id = indexer.findId(Integer.parseInt(decodedStringValue), table,
+									Collections.singleton(col));
 							Object reference = entityManager.find(clazz, id);
 							if (reference == null) {
 								throw new RuntimeException(clazz.getSimpleName() + " not found! ");
@@ -367,7 +386,8 @@ public class DefaultJSMapperController implements JSMapperController {
 		throw new RuntimeException("Cant sanitize " + t.getName() + "." + c + " to " + clazz);
 	}
 
-	private Object sanitizedPut(DBModelTable t, Map<String, String> headers, byte[] ba, HttpServletRequest request) {
+	private Object sanitizedPut(final DBModelTable t, final Map<String, String> headers, final byte[] ba,
+			final HttpServletRequest request) {
 		try {
 			Object entity = t.getEntityClass().newInstance();
 			BeanWrapperImpl bwi = new BeanWrapperImpl(t.getEntityClass());
@@ -417,7 +437,7 @@ public class DefaultJSMapperController implements JSMapperController {
 		}
 	}
 
-	private boolean canWrite(DBModelColumn c) {
+	private boolean canWrite(final DBModelColumn c) {
 		switch (c.getColtype()) {
 		case MANY_TO_MANY_OWNER:
 		case MANY_TO_MANY_NON_OWNER:
@@ -440,7 +460,7 @@ public class DefaultJSMapperController implements JSMapperController {
 		}
 	}
 
-	private void writeValue(StringBuilder sb, BeanWrapperImpl bwi, DBModelColumn c) {
+	private void writeValue(final StringBuilder sb, final BeanWrapperImpl bwi, final DBModelColumn c) {
 		switch (c.getColtype()) {
 		case MANY_TO_MANY_OWNER:
 		case MANY_TO_MANY_NON_OWNER:
@@ -536,7 +556,7 @@ public class DefaultJSMapperController implements JSMapperController {
 		}
 	}
 
-	private void writeKey(StringBuilder sb, DBModelColumn c) {
+	private void writeKey(final StringBuilder sb, final DBModelColumn c) {
 		switch (c.getColtype()) {
 		case MANY_TO_MANY_OWNER:
 		case MANY_TO_MANY_NON_OWNER:
@@ -560,7 +580,8 @@ public class DefaultJSMapperController implements JSMapperController {
 	}
 
 	@Transactional
-	private void updateSimpleFieldValue(DBModelTable t, DBModelColumn c, HttpServletRequest request, String index) {
+	private void updateSimpleFieldValue(final DBModelTable t, final DBModelColumn c, final HttpServletRequest request,
+			final String index) {
 
 		Object entityId = indexer.findId(Integer.parseInt(index), t);
 		Object entity = entityManager.find(t.getEntityClass(), entityId);

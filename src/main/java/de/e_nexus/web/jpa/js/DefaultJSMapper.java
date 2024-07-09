@@ -25,15 +25,6 @@ import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.transaction.Transactional;
-
 import org.springframework.beans.BeanWrapperImpl;
 import org.springframework.util.StreamUtils;
 
@@ -44,10 +35,17 @@ import de.e_nexus.web.jpa.js.mod.DBModelTable;
 import de.e_nexus.web.jpa.js.mod.DeleteRequestType;
 import de.e_nexus.web.jpa.js.mod.GetRequestType;
 import de.e_nexus.web.jpa.js.mod.PushRequestType;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
 
 @Named
 public class DefaultJSMapper implements JSMapperHandler {
-
 
 	private static final String JS_CODE;
 	static {
@@ -71,6 +69,7 @@ public class DefaultJSMapper implements JSMapperHandler {
 	@Inject
 	private final IndexFacade indexer = null;
 
+	@Override
 	public String getJavascriptCode() {
 
 		StringBuilder sb = new StringBuilder("var tm={");
@@ -146,7 +145,7 @@ public class DefaultJSMapper implements JSMapperHandler {
 	}
 
 	@Override
-	public GetRequestType calculateGetRequestType(File f, HttpServletRequest req, URL url) {
+	public GetRequestType calculateGetRequestType(final File f, final HttpServletRequest req, final URL url) {
 		if (f.getName().equals("jsm.js"))
 			return GetRequestType.JAVASCRIPT;
 		if (url.getPath().endsWith("/")) {
@@ -171,7 +170,7 @@ public class DefaultJSMapper implements JSMapperHandler {
 	}
 
 	@Override
-	public PushRequestType calculatePushRequestType(File f, HttpServletRequest req, URL url) {
+	public PushRequestType calculatePushRequestType(final File f, final HttpServletRequest req, final URL url) {
 		String entity = f.getParentFile().getParentFile().getName();
 		String property = f.getName();
 		DBModelTable table = model.getEntity(entity);
@@ -207,7 +206,7 @@ public class DefaultJSMapper implements JSMapperHandler {
 	}
 
 	@Override
-	public DeleteRequestType calculateDeleteRequestType(File f, HttpServletRequest req, URL url) {
+	public DeleteRequestType calculateDeleteRequestType(final File f, final HttpServletRequest req, final URL url) {
 		String entityName = f.getParentFile().getName();
 		DBModelTable entity = model.getEntity(entityName);
 		if (entity != null) {
@@ -218,7 +217,7 @@ public class DefaultJSMapper implements JSMapperHandler {
 
 	@Override
 	@Transactional
-	public void writeBinaryDataField(File f, HttpServletResponse resp) {
+	public void writeBinaryDataField(final File f, final HttpServletResponse resp) {
 		String entityForLazyLoad = f.getParentFile().getParentFile().getName();
 		DBModelColumn field = null;
 		DBModelTable table = model.getEntity(entityForLazyLoad);

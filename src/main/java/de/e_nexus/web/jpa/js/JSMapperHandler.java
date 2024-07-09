@@ -20,12 +20,11 @@ package de.e_nexus.web.jpa.js;
 import java.io.File;
 import java.net.URL;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import de.e_nexus.web.jpa.js.mod.DeleteRequestType;
 import de.e_nexus.web.jpa.js.mod.GetRequestType;
 import de.e_nexus.web.jpa.js.mod.PushRequestType;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 public interface JSMapperHandler {
 
