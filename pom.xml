@@ -13,7 +13,7 @@
 	</properties>
 	<groupId>com.sotacms</groupId>
 	<artifactId>restfuljs2jpa</artifactId>
-	<version>1.0.16</version>
+	<version>1.0.17</version>
 	<packaging>jar</packaging>
 	<dependencies>
 		<dependency>

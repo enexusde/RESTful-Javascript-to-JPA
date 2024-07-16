@@ -422,6 +422,8 @@ public class DefaultJSMapperController implements JSMapperController {
 				case OPTIONAL_TIMESTAMP:
 				case OPTIONAL_DATE:
 				case OPTIONAL_MANY_TO_ONE:
+				case ONE_TO_ONE_NON_OWNING_SIDE:
+				case ONE_TO_ONE_OWNING_SIDE:
 					pd.getWriteMethod().invoke(entity, isnull ? null : sanitize(c, string, pd.getPropertyType(), t));
 
 				default:
